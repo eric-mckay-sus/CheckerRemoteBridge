@@ -486,5 +486,5 @@ $RECYCLE.BIN/
 **/.sonarqube
 bin/
 obj/
-/OpcSandbox/license.bin
-/OpcSandbox/OPC Foundation
+/OpcUtilities/license.bin
+/OpcUtilities/OPC Foundation
