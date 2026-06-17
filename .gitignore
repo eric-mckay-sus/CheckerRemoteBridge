@@ -482,7 +482,7 @@ $RECYCLE.BIN/
 *.swp
 
 # Miscellaneous
-/loadDbEnv.bat
+/loadOpcEnv.bat
 **/.sonarqube
 bin/
 obj/

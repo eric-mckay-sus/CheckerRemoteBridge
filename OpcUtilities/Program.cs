@@ -2,14 +2,13 @@
 // Copyright (c) 2026 Stanley Electric US Co. Inc. Licensed under the MIT License.
 // </copyright>
 
-namespace OpcSandbox;
+namespace OpcUtilities;
 
 using System.Reflection;
 using OpcLabs.BaseLib.ComponentModel;
 using OpcLabs.EasyOpc.UA;
 using OpcLabs.EasyOpc.UA.Extensions;
 using OpcLabs.EasyOpc.UA.OperationModel;
-using OpcXml.Da10;
 
 /// <summary>
 /// Utilities for interfacing with OPC software using the EasyOpc SDK from OPC Labs.
@@ -19,7 +18,7 @@ public static class OpcUtilities
     /// <summary>
     /// Describes the connection to the OPC server.
     /// </summary>
-    private static readonly UAEndpointDescriptor EndpointDescriptor = ((UAEndpointDescriptor)"opc.tcp://SUS-KEPWARE-02.stanleyus.local:49320").WithUserNameIdentity("jot", "jot2024!");
+    private static readonly UAEndpointDescriptor EndpointDescriptor = ((UAEndpointDescriptor)GetRequired("OPC_URI")).WithUserNameIdentity(GetRequired("OPC_USER"), GetRequired("OPC_PASS"));
 
     /// <summary>
     /// Describes this particular OPC client.
@@ -75,6 +74,9 @@ public static class OpcUtilities
         }
     }
 
+    /// <summary>
+    /// Registers the license binary (must be in the solution at OpcUtilities/license.bin).
+    /// </summary>
     private static void RegisterLicense()
     {
         try
@@ -146,5 +148,22 @@ public static class OpcUtilities
             Console.WriteLine($"OPC Error: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Gets a required value from the environment.
+    /// </summary>
+    /// <param name="key">The key to get the environment variable.</param>
+    /// <returns>The value associated with the key, or <see cref="InvalidOperationException"/> if not found.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <paramref name="key"/> cannot be found in the environment.</exception>
+    private static string GetRequired(string key)
+    {
+        string? value = Environment.GetEnvironmentVariable(key);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Required environment variable '{key}' is missing for OPC connection.");
+        }
+
+        return value;
     }
 }
