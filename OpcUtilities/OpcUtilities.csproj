@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpcLabs.QuickOpc" Version="5.84.192" />
+    <PackageReference Include="OpcLabs.QuickOpc" Version="5.84.*" />
   </ItemGroup>
 
 </Project>

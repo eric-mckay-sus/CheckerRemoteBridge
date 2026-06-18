@@ -35,9 +35,10 @@ public static class OpcUtilities
         bool repeat = true;
         while (repeat)
         {
-            Console.Write("Please indicate whether you would like to read or write to the target tag: ");
+            Console.Write("Please indicate whether you would like to read, write, or monitor the target tag: ");
             string response = Console.ReadLine() ?? string.Empty;
             bool isRead = response.Equals("read", StringComparison.OrdinalIgnoreCase);
+            bool isWrite = response.Equals("write", StringComparison.OrdinalIgnoreCase);
 
             string?[] nodeIdBuilder = new string?[4];
             Console.Write("Please enter channel name: ");
@@ -55,7 +56,7 @@ public static class OpcUtilities
             {
                 await ReadOpcTag(nodeId);
             }
-            else
+            else if (isWrite)
             {
                 object? toWrite = null;
                 while (toWrite is null)
@@ -66,12 +67,18 @@ public static class OpcUtilities
 
                 await WriteOpcTag(nodeId, toWrite);
             }
+            else
+            {
+                MonitorOpcTag(nodeId);
+            }
 
             Console.Write("Do you wish to process another tag? (y/n): ");
-            char confirmation = (char)Console.ReadKey().Key;
+            char confirmation = Console.ReadKey().KeyChar;
             Console.WriteLine();
             repeat = confirmation.Equals('y') || confirmation.Equals('Y');
         }
+
+        Client.UnsubscribeAllMonitoredItems();
     }
 
     /// <summary>
@@ -110,7 +117,7 @@ public static class OpcUtilities
             Console.WriteLine("Reading OPC node value...");
 
             // Connection is implicitly opened and managed during the operation
-            object value = IEasyUAClientExtension.ReadValue(Client, EndpointDescriptor, nodeId);
+            object value = await Task.Run(() => Client.ReadValue(EndpointDescriptor, nodeId));
 
             Console.WriteLine($"Successfully read {nodeId.Split('.')[^1]} tag: {value}");
             return value.ToString() ?? string.Empty;
@@ -138,7 +145,7 @@ public static class OpcUtilities
             Console.WriteLine("Writing OPC node value...");
 
             // Connection is implicitly opened and managed during the operation
-            Client.WriteValue(EndpointDescriptor, nodeId, value);
+            await Task.Run(() => Client.WriteValue(EndpointDescriptor, nodeId, value));
 
             Console.WriteLine($"Successfully wrote {value} to {nodeId.Split('.')[^1]} tag");
             return true;
@@ -148,6 +155,31 @@ public static class OpcUtilities
             Console.WriteLine($"OPC Error: {ex.Message}");
             return false;
         }
+    }
+
+    private static void MonitorOpcTag(string nodeId)
+    {
+        EasyUAClientCore.SharedParameters.EngineParameters.CertificateAcceptancePolicy.AcceptAnyCertificate = true;
+
+        Console.WriteLine("Initializing monitor for OPC node...");
+
+        Client.SubscribeDataChange(
+            EndpointDescriptor,
+            nodeId,
+            1000,
+            (sender, eventArgs) =>
+            {
+                if (eventArgs.Succeeded)
+                {
+                    Console.WriteLine($"\n\tTag {nodeId.Split('.')[^1]} changed to: {eventArgs.AttributeData.Value}");
+                }
+                else
+                {
+                    Console.WriteLine($"\n\tError: {eventArgs.ErrorMessage}");
+                }
+            });
+
+        Console.WriteLine($"Monitor initialized. All changes to {nodeId.Split('.')[^1]} will be reported here.");
     }
 
     /// <summary>
