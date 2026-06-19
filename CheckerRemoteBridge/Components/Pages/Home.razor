@@ -1,7 +1,192 @@
 ﻿@page "/"
+@implements IDisposable
+@using Microsoft.Extensions.Options
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Checker Fleet</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="fleet-top-bar">
+    <div>
+        <span class="fleet-title">Checker fleet — ops console</span>
+        <span class="fleet-subtitle">@FinalCount Pi5 · Raspbian OS Full · OPC UA via KepServerEX</span>
+    </div>
+    <div class="fleet-top-meta">
+        <span class="fleet-server-badge">
+            <span class="fleet-live-dot"></span>@ServerDisplayName
+        </span>
+        <span class="fleet-clock">@ClockText</span>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="fleet-grid">
+    @for (int i = 1; i <= FinalCount; i++)
+    {
+        int finalId = i;
+        CheckerStatus status = StateStore.Get(finalId);
+        HealthState health = HealthEvaluator.Evaluate(status, Now, WatchdogStaleSeconds);
+        <CheckerStationCard FinalId="finalId"
+                            Status="status"
+                            Health="health"
+                            Now="Now"
+                            Selected="finalId == SelectedFinalId"
+                            OnSelected="SelectFinal" />
+    }
+</div>
+
+<div class="fleet-section">
+    <div class="fleet-section-head">
+        <span>Final @SelectedFinalId — control panel</span>
+    </div>
+    <CheckerDetailPanel FinalId="SelectedFinalId"
+                        Status="StateStore.Get(SelectedFinalId)"
+                        Health="HealthEvaluator.Evaluate(StateStore.Get(SelectedFinalId), Now, WatchdogStaleSeconds)"
+                        Now="Now"
+                        WatchdogStaleSeconds="WatchdogStaleSeconds"
+                        OpcConfigured="ActionService.IsConfigured"
+                        OnReboot="ConfirmReboot"
+                        OnShutdown="ConfirmShutdown"
+                        OnLaunch="ConfirmLaunch" />
+</div>
+
+<div class="fleet-status-strip">
+    <span class="fleet-legend-title">Health:</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#198754"></span>Green — watchdog &lt;@WatchdogStaleSeconds s, no alarm</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#dc3545"></span>Red — watchdog stale or alarm active</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#64748b"></span>Offline — CheckerState 0</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#0dcaf0"></span>Transitioning — 100/101/102</span>
+</div>
+
+<ConfirmActionModal IsOpen="modalOpen"
+                    Title="@modalTitle"
+                    Body="@modalBody"
+                    ConfirmLabel="@modalConfirmLabel"
+                    ConfirmClass="@modalConfirmClass"
+                    OnConfirm="ExecuteModalAction"
+                    OnCancel="CloseModal" />
+
+@code {
+    [Inject]
+    private CheckerStateStore StateStore { get; set; } = default!;
+
+    [Inject]
+    private CheckerActionService ActionService { get; set; } = default!;
+
+    [Inject]
+    private IOptions<CheckerFleetOptions> FleetOptions { get; set; } = default!;
+
+    private int FinalCount => FleetOptions.Value.FinalCount;
+    private string ServerDisplayName => FleetOptions.Value.ServerDisplayName;
+    private int WatchdogStaleSeconds => FleetOptions.Value.WatchdogStaleSeconds;
+
+    private int SelectedFinalId { get; set; } = 1;
+    private DateTime Now { get; set; } = DateTime.Now;
+    private string ClockText { get; set; } = string.Empty;
+
+    private bool modalOpen;
+    private string modalTitle = string.Empty;
+    private string modalBody = string.Empty;
+    private string modalConfirmLabel = "Confirm";
+    private string modalConfirmClass = string.Empty;
+    private Func<Task>? pendingAction;
+
+    protected override void OnInitialized()
+    {
+        StateStore.StatusChanged += OnStatusChanged;
+        UpdateClock();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _ = RunClockLoop();
+        _ = RunWatchdogLoop();
+    }
+
+    private void OnStatusChanged(int _) => InvokeAsync(StateHasChanged);
+
+    private void SelectFinal(int finalId) => SelectedFinalId = finalId;
+
+    private void ConfirmLaunch(int finalId) =>
+        OpenModal(
+            $"Auto-launch Final {finalId}",
+            $"Connects to pi5-checker-0{finalId}.local and runs the checker launch script. Boot checksum will appear once the script completes.",
+            "Launch",
+            "confirm-warn",
+            async () => await ActionService.RequestAutoAsync(finalId));
+
+    private void ConfirmReboot(int finalId) =>
+        OpenModal(
+            $"Reboot Final {finalId}",
+            "This fires <strong>RebootRequest</strong> over OPC. The panel will watch <strong>CheckerState</strong> for code 100 to confirm the checker is coming back up.",
+            "Confirm reboot",
+            "confirm-warn",
+            async () => await ActionService.RequestRebootAsync(finalId));
+
+    private void ConfirmShutdown(int finalId) =>
+        OpenModal(
+            $"Shut down Final {finalId}",
+            "This fires <strong>ShutdownRequest</strong> over OPC. The Pi will power down gracefully.",
+            "Confirm shutdown",
+            "confirm-danger",
+            async () => await ActionService.RequestShutdownAsync(finalId));
+
+    private void OpenModal(string title, string body, string confirmLabel, string confirmClass, Func<Task> action)
+    {
+        modalTitle = title;
+        modalBody = body;
+        modalConfirmLabel = confirmLabel;
+        modalConfirmClass = confirmClass;
+        pendingAction = action;
+        modalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        modalOpen = false;
+        pendingAction = null;
+    }
+
+    private async Task ExecuteModalAction()
+    {
+        if (pendingAction is not null)
+        {
+            await pendingAction();
+        }
+
+        CloseModal();
+    }
+
+    private async Task RunClockLoop()
+    {
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync())
+        {
+            UpdateClock();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RunWatchdogLoop()
+    {
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync())
+        {
+            Now = DateTime.Now;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateClock()
+    {
+        DateTime now = DateTime.Now;
+        ClockText = $"{now:MMM d} {now:HH:mm:ss}";
+    }
+
+    public void Dispose()
+    {
+        StateStore.StatusChanged -= OnStatusChanged;
+    }
+}

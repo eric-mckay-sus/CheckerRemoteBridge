@@ -5,6 +5,9 @@
 namespace CheckerRemoteBridge;
 
 using CheckerRemoteBridge.Components;
+using CheckerRemoteBridge.Options;
+using CheckerRemoteBridge.Services;
+using OpcUtilities;
 
 /// <summary>
 /// Hosts the application startup and configuration.
@@ -20,22 +23,27 @@ public static class Program
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         builder.Services.AddBlazorBootstrap();
 
-        // Add services to the container.
+        builder.Services.Configure<CheckerFleetOptions>(
+            builder.Configuration.GetSection(CheckerFleetOptions.SectionName));
+
+        builder.Services.AddSingleton<CheckerStateStore>();
+        builder.Services.AddSingleton<CheckerActionService>();
+        builder.Services.AddSingleton<IPiControlService, PiControlServiceStub>();
+        builder.Services.AddSingleton(CreateOpcClient);
+        builder.Services.AddHostedService<OpcMonitorService>();
+
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
         WebApplication app = builder.Build();
 
-        // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
         {
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
-
         app.UseAntiforgery();
 
         app.MapRazorComponents<App>()
@@ -43,4 +51,9 @@ public static class Program
 
         app.Run();
     }
+
+    private static IOpcClient CreateOpcClient(IServiceProvider serviceProvider) =>
+        EasyUAOpcClient.TryCreateFromEnvironment(out EasyUAOpcClient? client) && client is not null
+            ? client
+            : new NullOpcClient();
 }
