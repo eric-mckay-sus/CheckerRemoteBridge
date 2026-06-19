@@ -48,19 +48,6 @@ main {
     border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-    .sidebar.sidebar-expanded {
-        width: 250px;
-        box-shadow: 5px 0 15px rgba(0,0,0,0.3);
-    }
-
-    .page:has(.sidebar-expanded)::after {
-        opacity: 1;
-    }
-
-    .page:has(.sidebar-expanded) main {
-        transition: filter 0.2s ease;
-    }
-
 @media (max-width: 640.98px) {
     .top-row {
         justify-content: space-between;
@@ -141,22 +128,4 @@ html, body {
 .row {
     margin-right: 0 !important;
     margin-left: 0 !important;
-}
-
-@media (hover: hover) {
-    .sidebar:hover {
-        width: 250px;
-        box-shadow: 5px 0 15px rgba(0,0,0,0.3); /* perceived depth */
-    }
-
-    /* If page contains a sidebar that is hovered, dim the background */
-    .page:has(.sidebar:hover)::after {
-        opacity: 1;
-    }
-
-    /* When the sidebar is expanded, dim the main page */
-    .page:has(.sidebar:hover) main {
-        filter: blur(1.5px);
-        transition: filter 0.2s ease;
-    }
 }

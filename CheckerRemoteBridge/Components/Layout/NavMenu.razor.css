@@ -148,17 +148,6 @@ body {
     flex-direction: column;
 }
 
-    /* Show the brand & text for all labels when the navbar is hovered or expanded */
-    .nav-scrollable.sidebar-expanded .header-brand,
-    .nav-scrollable.sidebar-expanded .nav-item label {
-        opacity: 1;
-    }
-
-    /* On hover/expand, give the navbar more room */
-    .nav-scrollable.sidebar-expanded {
-        width: 250px;
-    }
-
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
@@ -171,17 +160,5 @@ body {
         /* Allow sidebar to scroll for tall menus */
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
-    }
-}
-
-/* Restrict hover effects to just the devices that can use them (cursor-required) */
-@media (hover: hover) {
-    .nav-scrollable:hover .header-brand,
-    .nav-scrollable:hover .nav-item label {
-        opacity: 1
-    }
-
-    .nav-scrollable:not(.sidebar-expanded):hover {
-        width: 250px;
     }
 }

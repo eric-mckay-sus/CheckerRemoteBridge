@@ -1,5 +1,5 @@
 ﻿
-<div class="nav-scrollable @(isExpanded ? "sidebar-expanded" : "")">
+<div class="nav-scrollable">
     <div class="sidebar-header">
         <div class="header-content">
             <a class="stanley-icon" href=""></a>
@@ -9,39 +9,16 @@
 
     <nav class="flex-column">
         <div class="nav-item navbar-toggler">
-            <Button class="nav-link" @onclick="ToggleNavMenu" title="Navigation menu">
+            <Button class="nav-link" title="Navigation menu">
                 <Icon Name="IconName.List" Color="IconColor.White" Class="toggler-icon" />
                 <label>Collapse Navbar</label>
             </Button>
         </div>
         <div class="nav-item">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CollapseNavMenu">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <Icon Name="IconName.House" />
                 <label>Home</label>
             </NavLink>
         </div>
     </nav>
 </div>
-
-@code {
-    private bool isExpanded = false;
-
-    /// <summary>
-    /// Gets or sets the action to perform elsewhere when toggling
-    /// </summary>
-    [Parameter]
-    public EventCallback<bool> OnToggle { get; set; }
-
-    private async Task ToggleNavMenu()
-    {
-        isExpanded = !isExpanded;
-        await OnToggle.InvokeAsync(isExpanded);
-    }
-
-    private async Task CollapseNavMenu()
-    {
-        // Useful for mobile: close the menu automatically after clicking a link
-        isExpanded = false;
-        await OnToggle.InvokeAsync(isExpanded);
-    }
-}
