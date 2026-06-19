@@ -37,7 +37,7 @@ public static class OpcNodeIds
     /// <param name="tagName">The tag name within the Status group.</param>
     /// <returns>The fully qualified OPC node identifier.</returns>
     public static string StatusTag(int finalId, string tagName) =>
-        $"ns=2;s=ANT{finalId}.Final{finalId}.Status.{tagName}";
+        $"ns=2;s=ANT1.Final{finalId}.Status.{tagName}";
 
     /// <summary>
     /// Parses a final station id from a subscribed node identifier.
@@ -51,7 +51,7 @@ public static class OpcNodeIds
         finalId = 0;
         tagName = string.Empty;
 
-        const string prefix = "ns=2;s=ANT";
+        const string prefix = "ns=2;s=ANT1.Final";
         if (!nodeId.StartsWith(prefix, StringComparison.Ordinal))
         {
             return false;
