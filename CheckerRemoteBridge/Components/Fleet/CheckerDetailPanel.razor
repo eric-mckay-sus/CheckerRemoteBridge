@@ -4,7 +4,6 @@
     <div class="fleet-detail-top">
         <div>
             <div class="fleet-detail-name">Final @FinalId</div>
-            <div class="fleet-detail-sub">@OpcNodeIds.StatusTag(FinalId, "CheckerState") · pi5-checker-0@FinalId.local</div>
         </div>
         <span class="fleet-health-pill fleet-detail-pill" style="background:@HealthColor22;color:@HealthColor">
             <span class="fleet-health-dot" style="background:@HealthColor"></span>@HealthLabel
@@ -15,25 +14,21 @@
         @if (Health == HealthState.Offline)
         {
             <button class="fleet-action-btn primary" @onclick="() => OnLaunch.InvokeAsync(FinalId)">
-                Auto-launch / login
+                <Icon Name=IconName.PlayFill /> Launch checker
             </button>
-        }
-        else
-        {
-            <button class="fleet-action-btn" disabled title="Already running">Auto-launch / login</button>
         }
 
         @if (Health == HealthState.Red)
         {
             <button class="fleet-action-btn warn" @onclick="() => OnReboot.InvokeAsync(FinalId)">
-                Reboot (fires RebootRequest)
+                <Icon Name=IconName.Repeat /> Reboot
             </button>
         }
 
         <button class="fleet-action-btn danger"
                 disabled="@(Health == HealthState.Offline)"
                 @onclick="() => OnShutdown.InvokeAsync(FinalId)">
-            Shutdown (fires ShutdownRequest)
+            <Icon Name=IconName.XCircle /> Shutdown
         </button>
     </div>
 
@@ -53,7 +48,7 @@
             </div>
             <div class="fleet-kv-row">
                 <span class="fleet-kv-key">Last watchdog</span>
-                <span>@WatchdogAge</span>
+                <span>@WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</span>
             </div>
             <div class="fleet-kv-row">
                 <span class="fleet-kv-key">Threshold</span>

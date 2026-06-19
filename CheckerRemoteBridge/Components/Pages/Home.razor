@@ -6,8 +6,8 @@
 
 <div class="fleet-top-bar">
     <div>
-        <span class="fleet-title">Checker fleet — ops console</span>
-        <span class="fleet-subtitle">@FinalCount Pi5 · Raspbian OS Full · OPC UA via KepServerEX</span>
+        <span class="fleet-title">Checker Remote Bridge</span>
+        <span class="fleet-subtitle">@FinalCount Pi accessed over OPC UA via KepServerEX</span>
     </div>
     <div class="fleet-top-meta">
         <span class="fleet-server-badge">
@@ -49,10 +49,10 @@
 
 <div class="fleet-status-strip">
     <span class="fleet-legend-title">Health:</span>
-    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#198754"></span>Green — watchdog &lt;@WatchdogStaleSeconds s, no alarm</span>
-    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#dc3545"></span>Red — watchdog stale or alarm active</span>
-    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#64748b"></span>Offline — CheckerState 0</span>
-    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#0dcaf0"></span>Transitioning — 100/101/102</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#198754"></span>Green: &lt;@WatchdogStaleSeconds s since update, no alarm</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#dc3545"></span>Red: &gt;@WatchdogStaleSeconds s since update or alarm active</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#64748b"></span>Offline: Pi not running checker</span>
+    <span class="fleet-legend-item"><span class="fleet-dot" style="background:#0dcaf0"></span>Busy: Stopping/starting checker</span>
 </div>
 
 <ConfirmActionModal IsOpen="modalOpen"

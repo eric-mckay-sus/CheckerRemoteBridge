@@ -258,163 +258,6 @@ h1:focus {
     padding-bottom: 10px;
 }
 
-.error-page-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-    margin: 0;
-    min-width: 700px;
-}
-
-.container-sheet {
-    background: white;
-    padding: 40px;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
-    text-align: center;
-}
-
-.unauth-text { color: #d32f2f; }
-.forbidden-text { color: #f5576c; }
-.notfound-text { color: #6c757d; }
-
-.user-info {
-    background: #f5f5f5;
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-    color: #555;
-}
-
-.error-code {
-    margin: 0 0 10px 0;
-    font-size: 48px;
-    font-weight: bold;
-
-}
-.error-title {
-    color: #333;
-    font-size: 20px;
-    margin: 0 0 20px 0;
-    font-weight: 500;
-}
-
-.error-message {
-    color: #666;
-    line-height: 1.6;
-    margin: 0 0 20px 0;
-}
-
-/* Visual container for the upload area */
-.upload-card {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    border: 3px dashed #dee2e6;
-    border-radius: 25px;
-    padding: 2vh;
-    margin-bottom: 5px;
-    text-align: center;
-    width: 140vh;
-    height: 20vh;
-    transition: all 0.3s ease;
-}
-
-.upload-card:hover{
-    border-color:hsl(210, 75%, 70%);
-}
-
-.upload-card.drag-active {
-    border-color: #007bff;
-    background-color: hsl(211, 100%, 95%);
-    transform: scale(1.02);
-    transition: all 0.2s ease;
-}
-
-/* Make the actual input invisible but stretch it to fill the card */
-.hidden-input-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0; /* Invisible but clickable/droppable */
-    z-index: 2; /* Sits on top of the button */
-}
-
-/* Style the label as the button */
-.upload-button {
-    display: flex;
-    align-items: center;
-    padding: 8px 20px;
-    cursor: pointer;
-    background-color: hsl(211, 100%, 45%);
-    font-size: 20px;
-    color: white;
-    border-radius: 2px;
-    font-weight: 600;
-    transition: ease 0.2s;
-    gap: 6px;
-    z-index: 1;
-    position: absolute;
-    pointer-events: none;
-}
-
-.progress{
-    color: hsl(210, 76%, 40%)
-}
-
-.log-container{
-    max-height: 250px;
-    overflow-y: auto;
-    font-size: 0.85rem;
-    padding: 10px;
-    border-radius: 4px;
-}
-
-.transition-width {
-    transition: flex 0.4s ease-in-out,
-                max-width 0.4s ease-in-out,
-                width 0.4s ease-in-out;
-
-    /* Ensure the element doesn't snap to content size during the move */
-    flex-shrink: 0;
-    flex-grow: 0;
-}
-
-.verbose-hidden {
-    max-width: 0;
-    width: 0;
-    padding: 0 !important;
-    border: none;
-    overflow: hidden;
-}
-
-.verbose-visible {
-    max-width: none;
-    width: auto;
-}
-
-.table-striped > tbody > tr.table-success > td {
-    background-color: #d1e7dd !important;
-    color: #0f5132 !important;
-}
-
-/* Hides increment/decrement arrows on number fields */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
 /* Checker fleet dashboard */
 .fleet-top-bar {
     display: flex;
@@ -427,7 +270,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-title {
-    font-size: 20px;
+    font-size: 30px;
     font-weight: 600;
     letter-spacing: .06em;
     color: #64748b;
@@ -435,7 +278,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-subtitle {
-    font-size: 15px;
+    font-size: 22.5px;
     color: #94a3b8;
     margin-left: 10px;
 }
@@ -448,17 +291,20 @@ input::-webkit-inner-spin-button {
 
 .fleet-server-badge {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 15px;
+    font-size: 22.5px;
     color: #64748b;
     background: #fff;
     padding: 4px 10px;
     border-radius: 4px;
     border: 1px solid #dee2e6;
+
+    display: inline-flex;
+    align-items: center;
 }
 
 .fleet-live-dot {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: #198754;
     display: inline-block;
@@ -473,7 +319,7 @@ input::-webkit-inner-spin-button {
 
 .fleet-clock {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 15px;
+    font-size: 22.5px;
     color: #64748b;
 }
 
@@ -516,7 +362,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-card-title {
-    font-size: 15px;
+    font-size: 22.5px;
     font-weight: 600;
     letter-spacing: .05em;
     color: #64748b;
@@ -525,7 +371,7 @@ input::-webkit-inner-spin-button {
 
 .fleet-health-pill {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 500;
     padding: 2px 6px;
     border-radius: 3px;
@@ -535,8 +381,8 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-health-dot {
-    width: 5px;
-    height: 5px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
 }
 
@@ -545,14 +391,14 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-state-label {
-    font-size: 15px;
+    font-size: 22.5px;
     font-weight: 500;
     margin-bottom: 4px;
 }
 
 .fleet-msg-line {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
     color: #64748b;
     white-space: nowrap;
     overflow: hidden;
@@ -569,7 +415,7 @@ input::-webkit-inner-spin-button {
     gap: 5px;
     margin-top: 7px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .checksum-match { color: #198754; }
@@ -578,7 +424,7 @@ input::-webkit-inner-spin-button {
 
 .fleet-wd-age {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
     color: #64748b;
     margin-top: 5px;
 }
@@ -588,7 +434,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-section-head {
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: .08em;
     color: #64748b;
@@ -613,19 +459,19 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-detail-name {
-    font-size: 15px;
+    font-size: 22.5px;
     font-weight: 600;
 }
 
 .fleet-detail-sub {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
     color: #64748b;
     margin-top: 2px;
 }
 
 .fleet-detail-pill {
-    font-size: 10px;
+    font-size: 15px;
     padding: 4px 10px;
 }
 
@@ -636,7 +482,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-action-btn {
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 500;
     padding: 7px 13px;
     border-radius: 6px;
@@ -675,7 +521,7 @@ input::-webkit-inner-spin-button {
     background: #fff3cd;
     border: 1px solid #ffecb5;
     color: #664d03;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .fleet-info-grid {
@@ -694,7 +540,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-info-title {
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: .08em;
     color: #64748b;
@@ -707,7 +553,7 @@ input::-webkit-inner-spin-button {
     justify-content: space-between;
     padding: 3px 0;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .fleet-kv-key {
@@ -719,7 +565,7 @@ input::-webkit-inner-spin-button {
     border-radius: 4px;
     margin-top: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .checksum-box-match { background: #d1e7dd; color: #0f5132; }
@@ -727,7 +573,7 @@ input::-webkit-inner-spin-button {
 .checksum-box-pending { background: #e9ecef; color: #64748b; }
 
 .fleet-badge {
-    font-size: 10px;
+    font-size: 15px;
     font-family: Consolas, "Courier New", monospace;
     padding: 1px 5px;
     border-radius: 3px;
@@ -745,7 +591,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-legend-title {
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 600;
     color: #64748b;
 }
@@ -754,13 +600,13 @@ input::-webkit-inner-spin-button {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 10px;
+    font-size: 15px;
     color: #64748b;
 }
 
 .fleet-dot {
-    width: 7px;
-    height: 7px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     display: inline-block;
 }
@@ -795,13 +641,13 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-modal-title {
-    font-size: 15px;
+    font-size: 22.5px;
     font-weight: 600;
     margin-bottom: 6px;
 }
 
 .fleet-modal-body {
-    font-size: 10px;
+    font-size: 15px;
     color: #64748b;
     line-height: 1.6;
     margin-bottom: 16px;
@@ -814,7 +660,7 @@ input::-webkit-inner-spin-button {
 }
 
 .fleet-modal-btn {
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 500;
     padding: 7px 14px;
     border-radius: 6px;

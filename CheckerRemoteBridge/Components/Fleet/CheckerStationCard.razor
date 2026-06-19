@@ -16,9 +16,9 @@
             <div class="fleet-msg-line fleet-alarm-line">@Status.AlarmMessage</div>
         }
         <div class="fleet-checksum-row @ChecksumClass">
-            @ChecksumIcon checksum @ChecksumLabel
+            <Icon Name=@ChecksumIcon/> Checksum @ChecksumLabel
         </div>
-        <div class="fleet-wd-age">watchdog: @WatchdogAge</div>
+        <div class="fleet-wd-age">Updated: @WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</div>
     </div>
 </div>
 
@@ -61,13 +61,13 @@
     {
         ChecksumResult.Match => "verified",
         ChecksumResult.Mismatch => "MISMATCH",
-        _ => "awaiting boot report",
+        _ => "awaiting report",
     };
 
-    private string ChecksumIcon => Checksum switch
+    private IconName ChecksumIcon => Checksum switch
     {
-        ChecksumResult.Match => "✓",
-        ChecksumResult.Mismatch => "✗",
-        _ => "…",
+        ChecksumResult.Match => IconName.Check2,
+        ChecksumResult.Mismatch => IconName.XLg,
+        _ => IconName.Hourglass,
     };
 }
