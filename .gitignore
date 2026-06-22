@@ -487,4 +487,4 @@ $RECYCLE.BIN/
 bin/
 obj/
 /OpcUtilities/license.bin
-/OpcUtilities/OPC Foundation
+**/OPC Foundation

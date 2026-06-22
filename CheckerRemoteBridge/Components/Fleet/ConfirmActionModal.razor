@@ -1,0 +1,36 @@
+<div class="fleet-modal-overlay @(IsOpen ? "open" : string.Empty)">
+    <div class="fleet-modal">
+        <div class="fleet-modal-title">@Title</div>
+        <div class="fleet-modal-body">@((MarkupString)Body)</div>
+        <div class="fleet-modal-actions">
+            <button class="fleet-modal-btn" @onclick="Cancel">Cancel</button>
+            <button class="fleet-modal-btn @ConfirmClass" @onclick="Confirm">@ConfirmLabel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Body { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ConfirmLabel { get; set; } = "Confirm";
+
+    [Parameter]
+    public string ConfirmClass { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public EventCallback OnConfirm { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnCancel { get; set; }
+
+    private Task Confirm() => OnConfirm.InvokeAsync();
+    private Task Cancel() => OnCancel.InvokeAsync();
+}

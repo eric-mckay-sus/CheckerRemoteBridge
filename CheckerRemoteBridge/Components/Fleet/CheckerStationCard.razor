@@ -1,0 +1,73 @@
+@using static CheckerRemoteBridge.Services.ChecksumVerificationService
+
+<div class="fleet-card @(Selected ? "selected" : string.Empty)" @onclick="() => OnSelected.InvokeAsync(FinalId)">
+    <div class="fleet-health-strip" style="background:@HealthColor"></div>
+    <div class="fleet-card-header">
+        <span class="fleet-card-title">Final @FinalId</span>
+        <span class="fleet-health-pill" style="background:@HealthColor22;color:@HealthColor">
+            <span class="fleet-health-dot" style="background:@HealthColor"></span>@HealthLabel
+        </span>
+    </div>
+    <div class="fleet-card-body">
+        <div class="fleet-state-label" style="color:@StateColor">@StateLabel</div>
+        <div class="fleet-msg-line">@Status.StatusMessage</div>
+        @if (!string.IsNullOrWhiteSpace(Status.AlarmMessage))
+        {
+            <div class="fleet-msg-line fleet-alarm-line">@Status.AlarmMessage</div>
+        }
+        <div class="fleet-checksum-row @ChecksumClass">
+            <Icon Name=@ChecksumIcon/> Checksum @ChecksumLabel
+        </div>
+        <div class="fleet-wd-age">Updated: @WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int FinalId { get; set; }
+
+    [Parameter, EditorRequired]
+    public CheckerStatus Status { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public HealthState Health { get; set; }
+
+    [Parameter, EditorRequired]
+    public DateTime Now { get; set; }
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnSelected { get; set; }
+
+    private CheckerStateDefinition StateDefinition => CheckerStateDefinition.For(Status.CheckerState);
+    private string StateLabel => StateDefinition.Label;
+    private string StateColor => StateDefinition.Color;
+    private string HealthColor => HealthEvaluator.GetColor(Health);
+    private string HealthLabel => HealthEvaluator.GetLabel(Health);
+    private string HealthColor22 => $"{HealthColor}22";
+    private string WatchdogAge => HealthEvaluator.FormatWatchdogAge(Status.WatchdogDateTime, Now);
+
+    private ChecksumResult Checksum => Evaluate(Status);
+    private string ChecksumClass => Checksum switch
+    {
+        ChecksumResult.Match => "checksum-match",
+        ChecksumResult.Mismatch => "checksum-mismatch",
+        _ => "checksum-pending",
+    };
+
+    private string ChecksumLabel => Checksum switch
+    {
+        ChecksumResult.Match => "verified",
+        ChecksumResult.Mismatch => "MISMATCH",
+        _ => "awaiting report",
+    };
+
+    private IconName ChecksumIcon => Checksum switch
+    {
+        ChecksumResult.Match => IconName.Check2,
+        ChecksumResult.Mismatch => IconName.XLg,
+        _ => IconName.Hourglass,
+    };
+}

@@ -1,0 +1,148 @@
+@using static CheckerRemoteBridge.Services.ChecksumVerificationService
+
+<div class="fleet-detail-panel">
+    <div class="fleet-detail-top">
+        <div>
+            <div class="fleet-detail-name">Final @FinalId</div>
+        </div>
+        <span class="fleet-health-pill fleet-detail-pill" style="background:@HealthColor22;color:@HealthColor">
+            <span class="fleet-health-dot" style="background:@HealthColor"></span>@HealthLabel
+        </span>
+    </div>
+
+    <div class="fleet-action-bar">
+        @if (Health == HealthState.Offline)
+        {
+            <button class="fleet-action-btn primary" @onclick="() => OnLaunch.InvokeAsync(FinalId)">
+                <Icon Name=IconName.PlayFill /> Launch checker
+            </button>
+        }
+
+        @if (Health == HealthState.Red)
+        {
+            <button class="fleet-action-btn warn" @onclick="() => OnReboot.InvokeAsync(FinalId)">
+                <Icon Name=IconName.Repeat /> Reboot
+            </button>
+        }
+
+        <button class="fleet-action-btn danger"
+                disabled="@(Health == HealthState.Offline)"
+                @onclick="() => OnShutdown.InvokeAsync(FinalId)">
+            <Icon Name=IconName.XCircle /> Shutdown
+        </button>
+    </div>
+
+    @if (!OpcConfigured)
+    {
+        <div class="fleet-opc-warning">
+            OPC is not configured. Set OPC_URI, OPC_USER, and OPC_PASS to enable live monitoring and actions.
+        </div>
+    }
+
+    <div class="fleet-info-grid">
+        <div class="fleet-info-cell">
+            <div class="fleet-info-title">Watchdog &amp; state</div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">CheckerState</span>
+                <span style="color:@StateColor">@Status.CheckerState — @StateLabel</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">Last watchdog</span>
+                <span>@WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">Threshold</span>
+                <span>@WatchdogStaleSeconds s</span>
+            </div>
+        </div>
+
+        <div class="fleet-info-cell">
+            <div class="fleet-info-title">Checksum verification</div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">Expected (MES)</span>
+                <span>@(string.IsNullOrWhiteSpace(Status.ExpectedChecksum) ? "—" : Status.ExpectedChecksum)</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">Actual (reported)</span>
+                <span>@(string.IsNullOrWhiteSpace(Status.ActualChecksum) ? "—" : Status.ActualChecksum)</span>
+            </div>
+            <div class="fleet-checksum-box @ChecksumBoxClass">
+                @ChecksumBoxText
+            </div>
+        </div>
+
+        <div class="fleet-info-cell">
+            <div class="fleet-info-title">Pending requests</div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">AutoRequestACK</span>
+                <span class="fleet-badge">@AckLabel(Status.AutoRequestAck)</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">ResetRequestACK</span>
+                <span class="fleet-badge">@AckLabel(Status.ResetRequestAck)</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">ShutdownRequestACK</span>
+                <span class="fleet-badge">@AckLabel(Status.ShutdownRequestAck)</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">RebootRequestACK</span>
+                <span class="fleet-badge">@AckLabel(Status.RebootRequestAck)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int FinalId { get; set; }
+
+    [Parameter, EditorRequired]
+    public CheckerStatus Status { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public HealthState Health { get; set; }
+
+    [Parameter, EditorRequired]
+    public DateTime Now { get; set; }
+
+    [Parameter, EditorRequired]
+    public int WatchdogStaleSeconds { get; set; }
+
+    [Parameter]
+    public bool OpcConfigured { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnReboot { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnShutdown { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnLaunch { get; set; }
+
+    private CheckerStateDefinition StateDefinition => CheckerStateDefinition.For(Status.CheckerState);
+    private string StateLabel => StateDefinition.Label;
+    private string StateColor => StateDefinition.Color;
+    private string HealthColor => HealthEvaluator.GetColor(Health);
+    private string HealthLabel => HealthEvaluator.GetLabel(Health);
+    private string HealthColor22 => $"{HealthColor}22";
+    private string WatchdogAge => HealthEvaluator.FormatWatchdogAge(Status.WatchdogDateTime, Now);
+
+    private ChecksumResult Checksum => Evaluate(Status);
+    private string ChecksumBoxClass => Checksum switch
+    {
+        ChecksumResult.Match => "checksum-box-match",
+        ChecksumResult.Mismatch => "checksum-box-mismatch",
+        _ => "checksum-box-pending",
+    };
+
+    private string ChecksumBoxText => Checksum switch
+    {
+        ChecksumResult.Match => "Verified at startup",
+        ChecksumResult.Mismatch => "Mismatch — investigate image",
+        _ => "Awaiting checksum report",
+    };
+
+    private static string AckLabel(bool acknowledged) => acknowledged ? "ack" : "idle";
+}
