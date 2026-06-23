@@ -491,19 +491,22 @@ h1:focus {
     cursor: pointer;
 }
 
-.fleet-action-btn.primary {
+.fleet-action-btn.primary,
+.fleet-modal-btn.confirm-launch {
     border-color: #9ec5fe;
     background: #cfe2ff;
     color: #084298;
 }
 
-.fleet-action-btn.danger {
+.fleet-action-btn.danger,
+.fleet-modal-btn.confirm-danger {
     border-color: #f1aeb5;
     background: #f8d7da;
     color: #842029;
 }
 
-.fleet-action-btn.warn {
+.fleet-action-btn.warn,
+.fleet-modal-btn.confirm-warn {
     border-color: #ffda6a;
     background: #fff3cd;
     color: #664d03;
@@ -568,9 +571,9 @@ h1:focus {
     font-size: 15px;
 }
 
-.checksum-box-match { background: #d1e7dd; color: #0f5132; }
+.checksum-box-match { background: #d1e7dd; color: #13663f; }
 .checksum-box-mismatch { background: #f8d7da; color: #842029; }
-.checksum-box-pending { background: #e9ecef; color: #64748b; }
+.checksum-box-pending { background: #e9ecef; color: #536174; }
 
 .fleet-badge {
     font-size: 15px;
@@ -578,7 +581,7 @@ h1:focus {
     padding: 1px 5px;
     border-radius: 3px;
     background: #e9ecef;
-    color: #64748b;
+    color: #536174;
 }
 
 .fleet-status-strip {
@@ -667,18 +670,6 @@ h1:focus {
     border: 1px solid #dee2e6;
     background: #fff;
     cursor: pointer;
-}
-
-.fleet-modal-btn.confirm-danger {
-    border-color: #f1aeb5;
-    background: #f8d7da;
-    color: #842029;
-}
-
-.fleet-modal-btn.confirm-warn {
-    border-color: #ffda6a;
-    background: #fff3cd;
-    color: #664d03;
 }
 
 @media (max-width: 1200px) {

@@ -43,16 +43,20 @@
         <div class="fleet-info-cell">
             <div class="fleet-info-title">Watchdog &amp; state</div>
             <div class="fleet-kv-row">
-                <span class="fleet-kv-key">CheckerState</span>
+                <span class="fleet-kv-key">Checker state</span>
                 <span style="color:@StateColor">@Status.CheckerState — @StateLabel</span>
             </div>
             <div class="fleet-kv-row">
-                <span class="fleet-kv-key">Last watchdog</span>
-                <span>@WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</span>
+                <span class="fleet-kv-key">Status message</span>
+                <span>@Status.StatusMessage</span>
             </div>
             <div class="fleet-kv-row">
-                <span class="fleet-kv-key">Threshold</span>
-                <span>@WatchdogStaleSeconds s</span>
+                <span class="fleet-kv-key">Alarm message</span>
+                <span style=color:red>@Status.AlarmMessage</span>
+            </div>
+            <div class="fleet-kv-row">
+                <span class="fleet-kv-key">Last change</span>
+                <span>@WatchdogAge @(WatchdogAge.Equals("no signal") ? "" : $"({Status.WatchdogDateTime})")</span>
             </div>
         </div>
 
