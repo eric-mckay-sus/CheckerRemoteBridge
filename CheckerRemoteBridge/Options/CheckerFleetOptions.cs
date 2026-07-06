@@ -12,7 +12,7 @@ public sealed class CheckerFleetOptions
     /// <summary>
     /// Gets or sets the configuration section name.
     /// </summary>
-    public const string SectionName = "CheckerFleet";
+    public const string SectionName = "F60 Final Function Checkers";
 
     /// <summary>
     /// Gets or sets the number of final stations to monitor.
@@ -22,7 +22,7 @@ public sealed class CheckerFleetOptions
     /// <summary>
     /// Gets or sets the display name for the OPC server shown in the UI.
     /// </summary>
-    public string ServerDisplayName { get; set; } = "SUS-KEPWARE-02:49320";
+    public string ServerDisplayName { get; set; } = "SUS-KEPWARE-02";
 
     /// <summary>
     /// Gets or sets the maximum watchdog age in seconds before a station is marked red.
