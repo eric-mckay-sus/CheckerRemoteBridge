@@ -45,22 +45,33 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
         this.PulseRequestAsync(finalId, "ShutdownRequest", cancellationToken);
 
     /// <summary>
-    /// Fires an auto-launch request for the specified final station and runs the checksum script on the Pi.
+    /// Fires an auto-launch request for the specified final station.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns><see langword="true"/> when the request pulse was written.</returns>
-    public async Task<bool> RequestAutoAsync(int finalId, CancellationToken cancellationToken = default)
+    public async Task<bool> RequestLaunchAsync(int finalId, CancellationToken cancellationToken = default)
     {
-        bool requestPulsed = await this.PulseRequestAsync(finalId, "AutoRequest", cancellationToken).ConfigureAwait(false);
-        string? checksum = await this.piControlService.RunChecksumScriptAsync(finalId, cancellationToken).ConfigureAwait(false);
+        await this.RequestChecksumAsync(finalId, cancellationToken);
+        return await this.piControlService.LaunchAsync(finalId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests a checksum on the checker program on the specified Pi.
+    /// </summary>
+    /// <param name="finalId">The final station number (1-based).</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The SSH output from the checksum command.</returns>
+    public async Task<string?> RequestChecksumAsync(int finalId, CancellationToken cancellationToken = default)
+    {
+        string? checksum = await this.piControlService.RunChecksumScriptAsync(finalId, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(checksum))
         {
             this.stateStore.Update(finalId, status => status.ActualChecksum = checksum.Trim());
         }
 
-        return requestPulsed;
+        return checksum;
     }
 
     /// <summary>

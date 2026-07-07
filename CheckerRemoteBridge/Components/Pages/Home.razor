@@ -93,6 +93,13 @@
         StateStore.StatusChanged += OnStatusChanged;
         UpdateClock();
     }
+    protected override async Task OnInitializedAsync()
+    {
+        for(int i = 1; i <= FinalCount; i++)
+        {
+            await ActionService.RequestChecksumAsync(i);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -115,7 +122,7 @@
             $"Connects to the Pi runnning checker {finalId} and runs the checksum and checker launch script. Checksum will display once computed.",
             "Launch",
             "confirm-launch",
-            async () => await ActionService.RequestAutoAsync(finalId));
+            async () => await ActionService.RequestLaunchAsync(finalId));
 
     private void ConfirmReboot(int finalId) =>
         OpenModal(
