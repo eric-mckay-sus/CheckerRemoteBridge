@@ -24,7 +24,12 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     /// <summary>
     /// Gets a value indicating whether OPC actions can be sent.
     /// </summary>
-    public bool IsConfigured => this.opcClient.IsConfigured;
+    public bool OpcConfigured => this.opcClient.IsConfigured;
+
+    /// <summary>
+    /// Gets a value indicating whether SSH actions can be sent.
+    /// </summary>
+    public bool SshConfigured => this.piControlService.IsConfigured;
 
     /// <summary>
     /// Fires a reboot request for the specified final station.

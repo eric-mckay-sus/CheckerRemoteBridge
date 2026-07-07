@@ -39,7 +39,9 @@ public static class Program
         WebApplication app = builder.Build();
 
         IPiControlService piControlService = app.Services.GetRequiredService<IPiControlService>();
-        if (!await piControlService.InitializeAsync().ConfigureAwait(false))
+
+        // If the user has the environment variables for Pi connection, but connection failed, tell them.
+        if (piControlService.IsConfigured && !await piControlService.InitializeAsync().ConfigureAwait(false))
         {
             throw new InvalidOperationException("SSH access to all checker Pi devices is required before application startup.");
         }

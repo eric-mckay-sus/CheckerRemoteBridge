@@ -23,7 +23,8 @@ public sealed class PiControlService : IPiControlService, IDisposable
     public PiControlService()
     {
         this.connections = Enumerable.Range(1, 5)
-            .Select(CreateConnection)
+            .Select(TryCreateConnection)
+            .OfType<PiConnection>()
             .ToDictionary(connection => connection.finalId);
 
         this.checksumCommand = Environment.GetEnvironmentVariable("FINAL_CHECKSUM_COMMAND")?.Trim() ?? DefaultChecksumCommand;
@@ -74,6 +75,11 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// <inheritdoc/>
     public async Task<bool> IsReachableAsync(int finalId, CancellationToken cancellationToken = default)
     {
+        if (!this.IsConfigured)
+        {
+            return false;
+        }
+
         SshClient client = this.GetClient(finalId);
         if (client.IsConnected)
         {
@@ -205,13 +211,20 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// </summary>
     /// <param name="finalId">The number of the checker for which the PiConnection should be made.</param>
     /// <returns>The new PiConnection object.</returns>
-    private static PiConnection CreateConnection(int finalId)
+    private static PiConnection? TryCreateConnection(int finalId)
     {
-        string host = GetRequired($"FINAL{finalId}_IP");
-        string username = GetEnvironmentValue($"FINAL{finalId}_USER") ?? GetRequired("FINAL_USER");
-        string password = GetEnvironmentValue($"FINAL{finalId}_PASS") ?? GetRequired("FINAL_PASS");
+        string? host = GetEnvironmentValue($"FINAL{finalId}_IP");
+        string? username = GetEnvironmentValue($"FINAL{finalId}_USER") ?? GetEnvironmentValue("FINAL_USER");
+        string? password = GetEnvironmentValue($"FINAL{finalId}_PASS") ?? GetEnvironmentValue("FINAL_PASS");
 
-        return new PiConnection(finalId, host, username, password);
+        if (host is null || username is null || password is null)
+        {
+            return null;
+        }
+        else
+        {
+            return new PiConnection(finalId, host, username, password);
+        }
     }
 
     /// <summary>
@@ -232,23 +245,6 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// Holds SSH credentials for a checker Pi.
     /// </summary>
     private sealed record PiConnection(int finalId, string host, string username, string password);
-
-    /// <summary>
-    /// Gets a required value from the environment.
-    /// </summary>
-    /// <param name="key">The key to get the environment variable.</param>
-    /// <returns>The value associated with the key, or <see cref="InvalidOperationException"/> if not found.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when <paramref name="key"/> cannot be found in the environment.</exception>
-    private static string GetRequired(string key)
-    {
-        string? value = Environment.GetEnvironmentVariable(key);
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException($"Required environment variable '{key}' is missing for {(key.Contains("OPC") ? "OPC" : "checker Pi")} connection.");
-        }
-
-        return value;
-    }
 
     private async Task<bool> EnsureConnectedAsync(int finalId, CancellationToken cancellationToken)
     {

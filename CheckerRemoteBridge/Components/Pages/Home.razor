@@ -17,6 +17,13 @@
     </div>
 </div>
 
+@if (!ActionService.SshConfigured)
+{
+    <div class="fleet-opc-warning d-block">
+        SSH is not configured. Set FINAL_USER FINAL_PASS, and FINALN_IP (with optional FINALN_USER and FINALN_PASS as overrides, e.g. FINAL2_USER) to enable checksums and remote launch capability.
+    </div>
+}
+
 <div class="fleet-grid">
     @for (int i = 1; i <= FinalCount; i++)
     {
@@ -41,7 +48,7 @@
                         Health="HealthEvaluator.Evaluate(StateStore.Get(SelectedFinalId), Now, WatchdogStaleSeconds)"
                         Now="Now"
                         WatchdogStaleSeconds="WatchdogStaleSeconds"
-                        OpcConfigured="ActionService.IsConfigured"
+                        OpcConfigured="ActionService.OpcConfigured"
                         OnReboot="ConfirmReboot"
                         OnShutdown="ConfirmShutdown"
                         OnLaunch="ConfirmLaunch" />
