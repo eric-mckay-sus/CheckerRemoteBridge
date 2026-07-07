@@ -29,4 +29,19 @@ public interface IPiControlService
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns><see langword="true"/> when the Pi responds.</returns>
     Task<bool> IsReachableAsync(int finalId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ensures SSH access to all configured Pis before application services are available.
+    /// </summary>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns><see langword="true"/> when all configured Pis are accessible.</returns>
+    Task<bool> InitializeAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs the configured checksum script on the specified Pi and returns the script output.
+    /// </summary>
+    /// <param name="finalId">The final station number (1-based).</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The checksum output when the script succeeds; otherwise <see langword="null"/>.</returns>
+    Task<string?> RunChecksumScriptAsync(int finalId, CancellationToken cancellationToken = default);
 }

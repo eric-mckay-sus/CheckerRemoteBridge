@@ -18,7 +18,8 @@ public static class Program
     /// Application entry point.
     /// </summary>
     /// <param name="args">Command-line arguments supplied by the host.</param>
-    public static void Main(string[] args)
+    /// <returns>A Task representing that the app is running.</returns>
+    public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         builder.Services.AddBlazorBootstrap();
@@ -28,7 +29,7 @@ public static class Program
 
         builder.Services.AddSingleton<CheckerStateStore>();
         builder.Services.AddSingleton<CheckerActionService>();
-        builder.Services.AddSingleton<IPiControlService, PiControlServiceStub>();
+        builder.Services.AddSingleton<IPiControlService, PiControlService>();
         builder.Services.AddSingleton(CreateOpcClient);
         builder.Services.AddHostedService<OpcMonitorService>();
 
@@ -36,6 +37,12 @@ public static class Program
             .AddInteractiveServerComponents();
 
         WebApplication app = builder.Build();
+
+        IPiControlService piControlService = app.Services.GetRequiredService<IPiControlService>();
+        if (!await piControlService.InitializeAsync().ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("SSH access to all checker Pi devices is required before application startup.");
+        }
 
         if (!app.Environment.IsDevelopment())
         {
@@ -49,7 +56,7 @@ public static class Program
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        app.Run();
+        await app.RunAsync();
     }
 
     private static IOpcClient CreateOpcClient(IServiceProvider serviceProvider) =>
