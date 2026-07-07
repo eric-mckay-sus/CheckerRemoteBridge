@@ -7,15 +7,19 @@ namespace CheckerRemoteBridge.Services;
 using OpcUtilities;
 
 /// <summary>
-/// Sends OPC request pulses for checker control actions.
+/// Sends OPC request pulses for checker control actions and triggers Pi-side checksum execution.
 /// </summary>
 /// <remarks>
 /// Initializes a new instance of the <see cref="CheckerActionService"/> class.
 /// </remarks>
 /// <param name="opcClient">The OPC client used to write request tags.</param>
-public sealed class CheckerActionService(IOpcClient opcClient)
+/// <param name="piControlService">The Pi control service used to run the checksum script.</param>
+/// <param name="stateStore">The checker state store used to publish checksum results.</param>
+public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService piControlService, CheckerStateStore stateStore)
 {
     private readonly IOpcClient opcClient = opcClient;
+    private readonly IPiControlService piControlService = piControlService;
+    private readonly CheckerStateStore stateStore = stateStore;
 
     /// <summary>
     /// Gets a value indicating whether OPC actions can be sent.
@@ -41,13 +45,23 @@ public sealed class CheckerActionService(IOpcClient opcClient)
         this.PulseRequestAsync(finalId, "ShutdownRequest", cancellationToken);
 
     /// <summary>
-    /// Fires an auto-launch request for the specified final station.
+    /// Fires an auto-launch request for the specified final station and runs the checksum script on the Pi.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns><see langword="true"/> when the request pulse was written.</returns>
-    public Task<bool> RequestAutoAsync(int finalId, CancellationToken cancellationToken = default) =>
-        this.PulseRequestAsync(finalId, "AutoRequest", cancellationToken);
+    public async Task<bool> RequestAutoAsync(int finalId, CancellationToken cancellationToken = default)
+    {
+        bool requestPulsed = await this.PulseRequestAsync(finalId, "AutoRequest", cancellationToken).ConfigureAwait(false);
+        string? checksum = await this.piControlService.RunChecksumScriptAsync(finalId, cancellationToken).ConfigureAwait(false);
+
+        if (!string.IsNullOrWhiteSpace(checksum))
+        {
+            this.stateStore.Update(finalId, status => status.ActualChecksum = checksum.Trim());
+        }
+
+        return requestPulsed;
+    }
 
     /// <summary>
     /// Fires a reset request for the specified final station.
