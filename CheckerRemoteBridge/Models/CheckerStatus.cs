@@ -58,4 +58,9 @@ public sealed class CheckerStatus
     /// Gets or sets a value indicating whether the reboot request was acknowledged.
     /// </summary>
     public bool RebootRequestAck { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the client checker program is currently running.
+    /// </summary>
+    public bool CheckerRunning { get; set; }
 }

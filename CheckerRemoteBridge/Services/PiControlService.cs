@@ -11,7 +11,7 @@ using Renci.SshNet;
 /// </summary>
 public sealed class PiControlService : IPiControlService, IDisposable
 {
-    private const string DefaultChecksumCommand = "cksum ./ready.sh";
+    private static readonly string DefaultChecksumCommand = "cksum ./ready.sh";
     private readonly IReadOnlyDictionary<int, PiConnection> connections;
     private readonly Dictionary<int, SshClient> sshClients = [];
     private readonly object clientSync = new ();
@@ -40,6 +40,11 @@ public sealed class PiControlService : IPiControlService, IDisposable
     public bool IsReady { get; private set; }
 
     /// <summary>
+    /// Container for SSH credentials for connecting to a checker Pi.
+    /// </summary>
+    private sealed record PiConnection(int finalId, string host, string username, string password);
+
+    /// <summary>
     /// Ensures SSH access to all configured Pis before the app starts.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
@@ -52,7 +57,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
         }
 
         Task<bool>[] connectTasks = this.connections.Keys
-            .Select(finalId => this.EnsureConnectedAsync(finalId, cancellationToken)).ToArray();
+            .Select(finalId => this.IsReachableAsync(finalId, cancellationToken)).ToArray();
 
         bool[] results = await Task.WhenAll(connectTasks).ConfigureAwait(false);
         this.IsReady = results.All(success => success);
@@ -235,6 +240,11 @@ public sealed class PiControlService : IPiControlService, IDisposable
     private static string BuildBashCommand(string command) =>
         $"bash -lc '{command.Replace("'", "'\\''")}'";
 
+    /// <summary>
+    /// Reads an environment variable if it exists.
+    /// </summary>
+    /// <param name="key">The name of the environment variable.</param>
+    /// <returns>The value stored in the environment variable name <paramref name="key"/>, or null if it does not exist.</returns>
     private static string? GetEnvironmentValue(string key)
     {
         string? value = Environment.GetEnvironmentVariable(key);
@@ -242,15 +252,11 @@ public sealed class PiControlService : IPiControlService, IDisposable
     }
 
     /// <summary>
-    /// Holds SSH credentials for a checker Pi.
+    /// Gets the SshClient object representing the checker for the specified Pi.
     /// </summary>
-    private sealed record PiConnection(int finalId, string host, string username, string password);
-
-    private async Task<bool> EnsureConnectedAsync(int finalId, CancellationToken cancellationToken)
-    {
-        return await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false);
-    }
-
+    /// <param name="finalId">The number of the checker for which to fetch the SSH client.</param>
+    /// <returns>The SshClient object associate with the indicated Pi.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when he specified checker is not registered in <see cref="sshClients"/>.</exception>
     private SshClient GetClient(int finalId)
     {
         if (!this.connections.TryGetValue(finalId, out PiConnection? connection))

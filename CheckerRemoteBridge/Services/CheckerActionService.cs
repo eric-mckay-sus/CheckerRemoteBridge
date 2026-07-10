@@ -4,14 +4,14 @@
 
 namespace CheckerRemoteBridge.Services;
 
+using static CheckerRemoteBridge.Services.ChecksumVerificationService;
+
 using OpcUtilities;
+using CheckerRemoteBridge.Models;
 
 /// <summary>
 /// Sends OPC request pulses for checker control actions and triggers Pi-side checksum execution.
 /// </summary>
-/// <remarks>
-/// Initializes a new instance of the <see cref="CheckerActionService"/> class.
-/// </remarks>
 /// <param name="opcClient">The OPC client used to write request tags.</param>
 /// <param name="piControlService">The Pi control service used to run the checksum script.</param>
 /// <param name="stateStore">The checker state store used to publish checksum results.</param>
@@ -54,29 +54,27 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when the request pulse was written.</returns>
-    public async Task<bool> RequestLaunchAsync(int finalId, CancellationToken cancellationToken = default)
+    /// <returns>Whether the launch was successful.</returns>
+    public async Task<bool> CheckAndLaunchAsync(int finalId, CancellationToken cancellationToken = default)
     {
         await this.RequestChecksumAsync(finalId, cancellationToken);
-        return await this.piControlService.LaunchAsync(finalId, cancellationToken);
-    }
 
-    /// <summary>
-    /// Requests a checksum on the checker program on the specified Pi.
-    /// </summary>
-    /// <param name="finalId">The final station number (1-based).</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>The SSH output from the checksum command.</returns>
-    public async Task<string?> RequestChecksumAsync(int finalId, CancellationToken cancellationToken = default)
-    {
-        string? checksum = await this.piControlService.RunChecksumScriptAsync(finalId, cancellationToken);
+        CheckerStatus currentStatus = this.stateStore.Get(finalId);
+        ChecksumResult result = Evaluate(currentStatus);
 
-        if (!string.IsNullOrWhiteSpace(checksum))
+        Console.WriteLine($"[Station {finalId}] Evaluation Result: {result}");
+        Console.WriteLine($"[Station {finalId}] Expected: '{currentStatus.ExpectedChecksum}'");
+        Console.WriteLine($"[Station {finalId}] Actual  : '{currentStatus.ActualChecksum}'");
+
+        if (!Evaluate(this.stateStore.Get(finalId)).Equals(ChecksumResult.Match))
         {
-            this.stateStore.Update(finalId, status => status.ActualChecksum = checksum.Trim());
+            return false;
         }
 
-        return checksum;
+        bool isRunning = await this.piControlService.LaunchAsync(finalId, cancellationToken);
+        this.stateStore.Update(finalId, status => status.CheckerRunning = isRunning);
+
+        return isRunning;
     }
 
     /// <summary>
@@ -87,6 +85,27 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     /// <returns><see langword="true"/> when the request pulse was written.</returns>
     public Task<bool> RequestResetAsync(int finalId, CancellationToken cancellationToken = default) =>
         this.PulseRequestAsync(finalId, "ResetRequest", cancellationToken);
+
+    /// <summary>
+    /// Requests a checksum on the checker program on the specified Pi.
+    /// </summary>
+    /// <remarks>
+    /// This method is private because it is run internally by <see cref="CheckAndLaunchAsync"/> and has no real reason to be run elsewhere.
+    /// </remarks>
+    /// <param name="finalId">The final station number (1-based).</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The SSH output from the checksum command.</returns>
+    private async Task<string?> RequestChecksumAsync(int finalId, CancellationToken cancellationToken = default)
+    {
+        string? checksum = await this.piControlService.RunChecksumScriptAsync(finalId, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(checksum))
+        {
+            this.stateStore.Update(finalId, status => status.ActualChecksum = checksum.Trim());
+        }
+
+        return checksum;
+    }
 
     private async Task<bool> PulseRequestAsync(int finalId, string tagName, CancellationToken cancellationToken)
     {

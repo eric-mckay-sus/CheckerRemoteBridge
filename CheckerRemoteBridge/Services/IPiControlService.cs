@@ -19,22 +19,22 @@ public interface IPiControlService
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when the launch command was sent successfully.</returns>
+    /// <returns>Whether the launch command was sent successfully.</returns>
     Task<bool> LaunchAsync(int finalId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks whether the Pi is reachable over SSH.
+    /// Checks whether the Pi is reachable over SSH. If not reachable, attempts to create the SSH connection and returns success state.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when the Pi responds.</returns>
+    /// <returns>Whether the Pi responds.</returns>
     Task<bool> IsReachableAsync(int finalId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Ensures SSH access to all configured Pis before application services are available.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when all configured Pis are accessible.</returns>
+    /// <returns>Whether all configured Pis are accessible.</returns>
     Task<bool> InitializeAsync(CancellationToken cancellationToken = default);
 
     /// <summary>

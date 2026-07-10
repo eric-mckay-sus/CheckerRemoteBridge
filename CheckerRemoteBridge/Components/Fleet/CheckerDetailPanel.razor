@@ -11,7 +11,7 @@
     </div>
 
     <div class="fleet-action-bar">
-        @if (Health == HealthState.Offline)
+        @if (!Status.CheckerRunning)
         {
             <button class="fleet-action-btn primary" @onclick="() => OnLaunch.InvokeAsync(FinalId)">
                 <Icon Name=IconName.PlayFill /> Launch checker
@@ -150,7 +150,7 @@
     private string ChecksumBoxText => Checksum switch
     {
         ChecksumResult.Match => "Verified at startup",
-        ChecksumResult.Mismatch => "Mismatch — investigate image",
+        ChecksumResult.Mismatch => "Mismatch — please compare",
         _ => "Awaiting checksum report",
     };
 
