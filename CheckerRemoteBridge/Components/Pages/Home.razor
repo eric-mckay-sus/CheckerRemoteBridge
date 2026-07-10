@@ -167,7 +167,7 @@
     private void ConfirmLaunch(int finalId) =>
         OpenModal(
             $"Auto-launch Final {finalId}",
-            $"Connects to the Pi runnning checker {finalId} and runs the checksum and checker launch script. Checksum will display once computed.",
+            $"Connects to the Pi runnning checker {finalId} to run the checksum and checker launch script.",
             "Launch",
             "confirm-launch",
             async () => await ActionService.CheckAndLaunchAsync(finalId));
@@ -175,7 +175,7 @@
     private void ConfirmReboot(int finalId) =>
         OpenModal(
             $"Reboot Final {finalId}",
-            "This fires <strong>RebootRequest</strong> over OPC. The panel will watch <strong>CheckerState</strong> for code 100 to confirm the checker is coming back up.",
+            "Creates a <strong>RebootRequest</strong> for the checker to shut down and restart.",
             "Confirm reboot",
             "confirm-warn",
             async () => await ActionService.RequestRebootAsync(finalId));
@@ -183,7 +183,7 @@
     private void ConfirmShutdown(int finalId) =>
         OpenModal(
             $"Shut down Final {finalId}",
-            "This fires <strong>ShutdownRequest</strong> over OPC. The checker will close gracefully.",
+            "Creates <strong>ShutdownRequest</strong> for the checker to close gracefully.",
             "Confirm shutdown",
             "confirm-danger",
             async () => await ActionService.RequestShutdownAsync(finalId));

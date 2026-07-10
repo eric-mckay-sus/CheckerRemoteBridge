@@ -80,26 +80,6 @@
                 @ChecksumBoxText
             </div>
         </div>
-
-        <div class="fleet-info-cell">
-            <div class="fleet-info-title">Pending requests</div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">AutoRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.AutoRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">ResetRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.ResetRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">ShutdownRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.ShutdownRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">RebootRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.RebootRequestAck)</span>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -153,6 +133,4 @@
         ChecksumResult.Mismatch => "Mismatch — please compare",
         _ => "Awaiting checksum report",
     };
-
-    private static string AckLabel(bool acknowledged) => acknowledged ? "ack" : "idle";
 }
