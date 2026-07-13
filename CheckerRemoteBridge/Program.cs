@@ -31,8 +31,6 @@ public static class Program
         builder.Services.AddSingleton<CheckerActionService>();
         builder.Services.AddSingleton<IPiControlService, FakePiControlService>(); // TODO swap FakePiControlService with PiControlService for deploy
         builder.Services.AddSingleton(CreateOpcClient);
-
-        builder.Services.AddSingleton<OpcMonitorService>();
         builder.Services.AddHostedService<OpcMonitorService>();
 
         builder.Services.AddRazorComponents()

@@ -116,50 +116,68 @@
 
         _ = RunClockLoop();
         _ = RunWatchdogLoop();
+        await TryRunStartupEvaluationAsync();
     }
 
     private void OnStatusChanged(int _) => InvokeAsync(StateHasChanged);
 
     private void OnStatusChangedForStartup(int finalId)
     {
-        if (startupEvaluationComplete) return;
-
-        _ = Task.Run(async () =>
+        if (startupEvaluationComplete)
         {
-            // Ensure we don't evaluate the same station multiple times concurrently
-            await launchLock.WaitAsync();
-            try
+            return;
+        }
+
+        _ = Task.Run(async () => await TryRunStartupEvaluationAsync(finalId));
+    }
+
+    private async Task TryRunStartupEvaluationAsync(int? finalId = null)
+    {
+        if (startupEvaluationComplete)
+        {
+            return;
+        }
+
+        await launchLock.WaitAsync();
+        try
+        {
+            IEnumerable<int> stationIds = finalId is null
+                ? Enumerable.Range(1, FinalCount)
+                : new[] { finalId.Value };
+
+            foreach (int stationId in stationIds)
             {
-                if (startupEvaluationComplete || launchedStationIds.Contains(finalId)) return;
-
-                CheckerStatus? status = StateStore.Get(finalId);
-
-                // See if the expected checksum tag has populated
-                if (!string.IsNullOrWhiteSpace(status.ExpectedChecksum))
+                if (startupEvaluationComplete || launchedStationIds.Contains(stationId))
                 {
-                    // Mark it immediately so no subsequent OPC updates trigger a duplicate call
-                    launchedStationIds.Add(finalId);
+                    continue;
+                }
 
-                    await ActionService.CheckAndLaunchAsync(finalId);
+                CheckerStatus status = StateStore.Get(stationId);
+                if (string.IsNullOrWhiteSpace(status.ExpectedChecksum))
+                {
+                    continue;
+                }
 
-                    if (launchedStationIds.Count >= FinalCount)
-                    {
-                        startupEvaluationComplete = true;
-                        StateStore.StatusChanged -= OnStatusChangedForStartup;
-                        System.Diagnostics.Debug.WriteLine("Successfully unsubscribed from startup launch handler.");
-                    }
+                launchedStationIds.Add(stationId);
+                await ActionService.CheckAndLaunchAsync(stationId);
+
+                if (launchedStationIds.Count >= FinalCount)
+                {
+                    startupEvaluationComplete = true;
+                    StateStore.StatusChanged -= OnStatusChangedForStartup;
+                    System.Diagnostics.Debug.WriteLine("Successfully unsubscribed from startup launch handler.");
+                    break;
                 }
             }
-            catch (Exception ex)
-            {
-                // Log or handle errors gracefully so an SSH failure doesn't crash the background worker
-                System.Diagnostics.Debug.WriteLine($"Error launching station {finalId}: {ex.Message}");
-            }
-            finally
-            {
-                launchLock.Release();
-            }
-        });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error launching station {finalId ?? 0}: {ex.Message}");
+        }
+        finally
+        {
+            launchLock.Release();
+        }
     }
 
     private void SelectFinal(int finalId) => SelectedFinalId = finalId;
