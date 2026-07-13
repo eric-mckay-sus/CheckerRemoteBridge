@@ -193,7 +193,7 @@
     private void ConfirmReboot(int finalId) =>
         OpenModal(
             $"Reboot Final {finalId}",
-            "Creates a <strong>RebootRequest</strong> for the checker to shut down and restart.",
+            "Creates a <strong>RebootRequest</strong> for the checker Pi to shut down and restart.",
             "Confirm reboot",
             "confirm-warn",
             async () => await ActionService.RequestRebootAsync(finalId));
@@ -201,7 +201,7 @@
     private void ConfirmShutdown(int finalId) =>
         OpenModal(
             $"Shut down Final {finalId}",
-            "Creates <strong>ShutdownRequest</strong> for the checker to close gracefully.",
+            "Creates <strong>ShutdownRequest</strong> for the checker to shut down gracefully. THE PI CAN ONLY BE RESTARTED MANUALLY, AT THE LINE!",
             "Confirm shutdown",
             "confirm-danger",
             async () => await ActionService.RequestShutdownAsync(finalId));
