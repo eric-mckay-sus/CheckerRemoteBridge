@@ -529,7 +529,7 @@ h1:focus {
 
 .fleet-info-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 1px;
     background: #dee2e6;
     margin-top: 14px;
@@ -543,7 +543,7 @@ h1:focus {
 }
 
 .fleet-info-title {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 600;
     letter-spacing: .08em;
     color: #64748b;
@@ -556,7 +556,7 @@ h1:focus {
     justify-content: space-between;
     padding: 3px 0;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 15px;
+    font-size: 18px;
 }
 
 .fleet-kv-key {
@@ -568,7 +568,7 @@ h1:focus {
     border-radius: 4px;
     margin-top: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 15px;
+    font-size: 18px;
 }
 
 .checksum-box-match { background: #d1e7dd; color: #13663f; }

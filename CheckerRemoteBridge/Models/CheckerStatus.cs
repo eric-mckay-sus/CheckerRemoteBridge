@@ -40,16 +40,6 @@ public sealed class CheckerStatus
     public string ActualChecksum { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the auto-launch request was acknowledged.
-    /// </summary>
-    public bool AutoRequestAck { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the reset request was acknowledged.
-    /// </summary>
-    public bool ResetRequestAck { get; set; }
-
-    /// <summary>
     /// Gets or sets a value indicating whether the shutdown request was acknowledged.
     /// </summary>
     public bool ShutdownRequestAck { get; set; }
@@ -58,4 +48,9 @@ public sealed class CheckerStatus
     /// Gets or sets a value indicating whether the reboot request was acknowledged.
     /// </summary>
     public bool RebootRequestAck { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the client checker program is currently running.
+    /// </summary>
+    public bool CheckerRunning { get; set; }
 }

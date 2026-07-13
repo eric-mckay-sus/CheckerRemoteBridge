@@ -18,7 +18,8 @@ public static class Program
     /// Application entry point.
     /// </summary>
     /// <param name="args">Command-line arguments supplied by the host.</param>
-    public static void Main(string[] args)
+    /// <returns>A Task representing that the app is running.</returns>
+    public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         builder.Services.AddBlazorBootstrap();
@@ -28,7 +29,7 @@ public static class Program
 
         builder.Services.AddSingleton<CheckerStateStore>();
         builder.Services.AddSingleton<CheckerActionService>();
-        builder.Services.AddSingleton<IPiControlService, PiControlServiceStub>();
+        builder.Services.AddSingleton<IPiControlService, FakePiControlService>(); // TODO swap FakePiControlService with PiControlService for deploy
         builder.Services.AddSingleton(CreateOpcClient);
         builder.Services.AddHostedService<OpcMonitorService>();
 
@@ -36,6 +37,14 @@ public static class Program
             .AddInteractiveServerComponents();
 
         WebApplication app = builder.Build();
+
+        IPiControlService piControlService = app.Services.GetRequiredService<IPiControlService>();
+
+        // If the user has the environment variables for Pi connection, but connection failed, tell them.
+        if (piControlService.IsConfigured && !await piControlService.InitializeAsync().ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("SSH access denied to one or more devices. Please verify connection information, or clear SSH environment variables to run OPC only.");
+        }
 
         if (!app.Environment.IsDevelopment())
         {
@@ -49,7 +58,7 @@ public static class Program
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        app.Run();
+        await app.RunAsync();
     }
 
     private static IOpcClient CreateOpcClient(IServiceProvider serviceProvider) =>

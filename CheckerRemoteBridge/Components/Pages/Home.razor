@@ -17,6 +17,13 @@
     </div>
 </div>
 
+@if (!ActionService.SshConfigured)
+{
+    <div class="fleet-opc-warning d-block">
+        SSH is not configured. Set FINAL_USER FINAL_PASS, and FINALN_IP (with optional FINALN_USER and FINALN_PASS as overrides, e.g. FINAL2_USER) to enable checksums and remote launch capability.
+    </div>
+}
+
 <div class="fleet-grid">
     @for (int i = 1; i <= FinalCount; i++)
     {
@@ -41,7 +48,7 @@
                         Health="HealthEvaluator.Evaluate(StateStore.Get(SelectedFinalId), Now, WatchdogStaleSeconds)"
                         Now="Now"
                         WatchdogStaleSeconds="WatchdogStaleSeconds"
-                        OpcConfigured="ActionService.IsConfigured"
+                        OpcConfigured="ActionService.OpcConfigured"
                         OnReboot="ConfirmReboot"
                         OnShutdown="ConfirmShutdown"
                         OnLaunch="ConfirmLaunch" />
@@ -88,9 +95,15 @@
     private string modalConfirmClass = string.Empty;
     private Func<Task>? pendingAction;
 
+    private readonly HashSet<int> launchedStationIds = new();
+    private readonly SemaphoreSlim launchLock = new(1, 1);
+    private bool startupEvaluationComplete = false;
+
     protected override void OnInitialized()
     {
         StateStore.StatusChanged += OnStatusChanged;
+        StateStore.StatusChanged += OnStatusChangedForStartup;
+
         UpdateClock();
     }
 
@@ -103,24 +116,84 @@
 
         _ = RunClockLoop();
         _ = RunWatchdogLoop();
+        await TryRunStartupEvaluationAsync();
     }
 
     private void OnStatusChanged(int _) => InvokeAsync(StateHasChanged);
+
+    private void OnStatusChangedForStartup(int finalId)
+    {
+        if (startupEvaluationComplete)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () => await TryRunStartupEvaluationAsync(finalId));
+    }
+
+    private async Task TryRunStartupEvaluationAsync(int? finalId = null)
+    {
+        if (startupEvaluationComplete)
+        {
+            return;
+        }
+
+        await launchLock.WaitAsync();
+        try
+        {
+            IEnumerable<int> stationIds = finalId is null
+                ? Enumerable.Range(1, FinalCount)
+                : new[] { finalId.Value };
+
+            foreach (int stationId in stationIds)
+            {
+                if (startupEvaluationComplete || launchedStationIds.Contains(stationId))
+                {
+                    continue;
+                }
+
+                CheckerStatus status = StateStore.Get(stationId);
+                if (string.IsNullOrWhiteSpace(status.ExpectedChecksum))
+                {
+                    continue;
+                }
+
+                launchedStationIds.Add(stationId);
+                await ActionService.CheckAndLaunchAsync(stationId);
+
+                if (launchedStationIds.Count >= FinalCount)
+                {
+                    startupEvaluationComplete = true;
+                    StateStore.StatusChanged -= OnStatusChangedForStartup;
+                    System.Diagnostics.Debug.WriteLine("Successfully unsubscribed from startup launch handler.");
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error launching station {finalId ?? 0}: {ex.Message}");
+        }
+        finally
+        {
+            launchLock.Release();
+        }
+    }
 
     private void SelectFinal(int finalId) => SelectedFinalId = finalId;
 
     private void ConfirmLaunch(int finalId) =>
         OpenModal(
             $"Auto-launch Final {finalId}",
-            $"Connects to the Pi runnning checker {finalId} and runs the checksum and checker launch script. Checksum will display once computed.",
+            $"Connects to the Pi runnning checker {finalId} to run the checksum and checker launch script.",
             "Launch",
             "confirm-launch",
-            async () => await ActionService.RequestAutoAsync(finalId));
+            async () => await ActionService.CheckAndLaunchAsync(finalId));
 
     private void ConfirmReboot(int finalId) =>
         OpenModal(
             $"Reboot Final {finalId}",
-            "This fires <strong>RebootRequest</strong> over OPC. The panel will watch <strong>CheckerState</strong> for code 100 to confirm the checker is coming back up.",
+            "Creates a <strong>RebootRequest</strong> for the checker Pi to shut down and restart.",
             "Confirm reboot",
             "confirm-warn",
             async () => await ActionService.RequestRebootAsync(finalId));
@@ -128,7 +201,7 @@
     private void ConfirmShutdown(int finalId) =>
         OpenModal(
             $"Shut down Final {finalId}",
-            "This fires <strong>ShutdownRequest</strong> over OPC. The checker will close gracefully.",
+            "Creates <strong>ShutdownRequest</strong> for the checker to shut down gracefully. THE PI CAN ONLY BE RESTARTED MANUALLY, AT THE LINE!",
             "Confirm shutdown",
             "confirm-danger",
             async () => await ActionService.RequestShutdownAsync(finalId));
@@ -188,5 +261,13 @@
     public void Dispose()
     {
         StateStore.StatusChanged -= OnStatusChanged;
+
+        // Handle the case where the page is disposed before OPC is fully set up.
+        if (!startupEvaluationComplete)
+        {
+            StateStore.StatusChanged -= OnStatusChangedForStartup;
+        }
+
+        this.launchLock.Dispose();
     }
 }

@@ -13,9 +13,6 @@ using OpcUtilities;
 /// <summary>
 /// Background service that subscribes to checker status OPC tags and updates the shared store.
 /// </summary>
-/// <remarks>
-/// Initializes a new instance of the <see cref="OpcMonitorService"/> class.
-/// </remarks>
 /// <param name="opcClient">The OPC client used for subscriptions.</param>
 /// <param name="stateStore">The shared checker state store.</param>
 /// <param name="fleetOptions">Fleet configuration options.</param>
@@ -89,12 +86,6 @@ public sealed class OpcMonitorService(
                 break;
             case "ActualChecksum":
                 status.ActualChecksum = value?.ToString() ?? string.Empty;
-                break;
-            case "AutoRequestACK":
-                status.AutoRequestAck = Convert.ToBoolean(value);
-                break;
-            case "ResetRequestACK":
-                status.ResetRequestAck = Convert.ToBoolean(value);
                 break;
             case "ShutdownRequestACK":
                 status.ShutdownRequestAck = Convert.ToBoolean(value);

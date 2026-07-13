@@ -11,7 +11,7 @@
     </div>
 
     <div class="fleet-action-bar">
-        @if (Health == HealthState.Offline)
+        @if (!Status.CheckerRunning)
         {
             <button class="fleet-action-btn primary" @onclick="() => OnLaunch.InvokeAsync(FinalId)">
                 <Icon Name=IconName.PlayFill /> Launch checker
@@ -34,7 +34,7 @@
 
     @if (!OpcConfigured)
     {
-        <div class="fleet-opc-warning">
+        <div class="fleet-opc-warning d-block">
             OPC is not configured. Set OPC_URI, OPC_USER, and OPC_PASS to enable live monitoring and actions.
         </div>
     }
@@ -78,26 +78,6 @@
             </div>
             <div class="fleet-checksum-box @ChecksumBoxClass">
                 @ChecksumBoxText
-            </div>
-        </div>
-
-        <div class="fleet-info-cell">
-            <div class="fleet-info-title">Pending requests</div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">AutoRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.AutoRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">ResetRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.ResetRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">ShutdownRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.ShutdownRequestAck)</span>
-            </div>
-            <div class="fleet-kv-row">
-                <span class="fleet-kv-key">RebootRequestACK</span>
-                <span class="fleet-badge">@AckLabel(Status.RebootRequestAck)</span>
             </div>
         </div>
     </div>
@@ -150,9 +130,7 @@
     private string ChecksumBoxText => Checksum switch
     {
         ChecksumResult.Match => "Verified at startup",
-        ChecksumResult.Mismatch => "Mismatch — investigate image",
+        ChecksumResult.Mismatch => "Mismatch — please compare",
         _ => "Awaiting checksum report",
     };
-
-    private static string AckLabel(bool acknowledged) => acknowledged ? "ack" : "idle";
 }

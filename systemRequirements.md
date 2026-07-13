@@ -12,14 +12,22 @@ Current state:
 - Pis run on SD cards susceptible to corruption/longevity issues
 - Checksum can be calculated manually using particular shell script
 
-Dev requirements
+New software requirements
 
-- Monitor state of 5 different checkers
-- Auto-launch/login from interface
-- Display checksum on individual checker startup, report to OPC
-- Compare actual to expected interface-side (fetched from OPC, provided by MES)
-- Periodic backup of checker logs to SUS-PE3DATA-02 drive (sFTP/SCP)
-- Manual shutdown option always present (fire shutdown request)
-- When checker in red state, offer reboot option. Fire RebootRequest and watch for code 100
+- Monitor state of 5 distinct devices running checker client program
+- Auto-SSH login from interface to enable remote checksum
+  - On successful login, run checksum script on checker client program, report result to user (need to know format of cksum output)
+    - Compare checksum result to MES-provided value (either stored in OPC tag or ENV variable)
+      - On successful checksum, auto-launch checker client
+      - On unsuccessful checksum, show Pi online, but checker client offline. Provide option to attempt checksum/launch again
+  - On unsuccessful login, show Pi as offline
+
+- Continuously update green/red state based on status code and time of last update
+  - Every update in checker client program paired with ping of current datetime to WatchdogDateTime OPC tag (>10 sec to red state)
+  - Manual shutdown option always present (fire shutdown request, await ACK. Show Pi offline)
+    - Checker client program responsible for gracefully closing and actual Pi shutdown
+  - When checker in red state, offer reboot option. Fire RebootRequest and watch for code 100 (Show Pi offline after ACK)
+    - Checker client program responsible for actual Pi reboot (Pi should launch checker client program on startup)
+
 - Monitor status/alarm messages for visual state updates
-- Continuously update green/red state based on latest WatchdogDateTime (~10 sec max before triggering red)
+- Periodic backup of checker logs to SUS-PE3DATA-02 drive (sFTP/SCP)
