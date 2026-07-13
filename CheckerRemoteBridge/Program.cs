@@ -31,6 +31,8 @@ public static class Program
         builder.Services.AddSingleton<CheckerActionService>();
         builder.Services.AddSingleton<IPiControlService, FakePiControlService>(); // TODO swap FakePiControlService with PiControlService for deploy
         builder.Services.AddSingleton(CreateOpcClient);
+
+        builder.Services.AddSingleton<OpcMonitorService>();
         builder.Services.AddHostedService<OpcMonitorService>();
 
         builder.Services.AddRazorComponents()
@@ -43,7 +45,7 @@ public static class Program
         // If the user has the environment variables for Pi connection, but connection failed, tell them.
         if (piControlService.IsConfigured && !await piControlService.InitializeAsync().ConfigureAwait(false))
         {
-            throw new InvalidOperationException("SSH access denied to one or more devices. Please verify connection information or clear SSH environment variables to run OPC only.");
+            throw new InvalidOperationException("SSH access denied to one or more devices. Please verify connection information, or clear SSH environment variables to run OPC only.");
         }
 
         if (!app.Environment.IsDevelopment())

@@ -10,9 +10,9 @@ namespace CheckerRemoteBridge.Options;
 public sealed class CheckerFleetOptions
 {
     /// <summary>
-    /// Gets or sets the configuration section name.
+    /// Gets or sets the configuration section name as it appears in appsettings.json.
     /// </summary>
-    public const string SectionName = "F60 Final Function Checkers";
+    public const string SectionName = "CheckerFleet";
 
     /// <summary>
     /// Gets or sets the number of final stations to monitor.
