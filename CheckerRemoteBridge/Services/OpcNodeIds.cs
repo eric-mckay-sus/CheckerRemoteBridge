@@ -5,7 +5,7 @@
 namespace CheckerRemoteBridge.Services;
 
 /// <summary>
-/// Builds OPC node identifiers for checker status tags.
+/// Service responsible for building/parsing OPC node identifiers for checker status tags.
 /// </summary>
 public static class OpcNodeIds
 {
@@ -40,12 +40,12 @@ public static class OpcNodeIds
         $"ns=2;s=ANT1.Final{finalId}.Status.{tagName}";
 
     /// <summary>
-    /// Parses a final station id from a subscribed node identifier.
+    /// Parses a final station ID from a subscribed node identifier.
     /// </summary>
     /// <param name="nodeId">The fully qualified OPC node identifier.</param>
     /// <param name="finalId">The parsed final id when successful.</param>
     /// <param name="tagName">The parsed tag name when successful.</param>
-    /// <returns><see langword="true"/> when the node id matches the expected pattern.</returns>
+    /// <returns>A value indicating whether the node id matches the expected pattern.</returns>
     public static bool TryParseStatusTag(string nodeId, out int finalId, out string tagName)
     {
         finalId = 0;

@@ -7,17 +7,17 @@ namespace CheckerRemoteBridge.Services;
 using CheckerRemoteBridge.Models;
 
 /// <summary>
-/// Compares expected and actual checksum values for a checker station.
+/// Service responsible for comparing expected and actual checksum values on a checker station.
 /// </summary>
 public static class ChecksumVerificationService
 {
     /// <summary>
-    /// Checksum comparison result codes.
+    /// Enumerates the possible checksum comparison results.
     /// </summary>
     public enum ChecksumResult
     {
         /// <summary>
-        /// No actual checksum has been reported yet.
+        /// No actual checksum has been reported yet, or no expected checksum value registered.
         /// </summary>
         Pending,
 
@@ -36,7 +36,7 @@ public static class ChecksumVerificationService
     /// Evaluates checksum status for a checker station.
     /// </summary>
     /// <param name="status">The live checker status.</param>
-    /// <returns>The checksum comparison result.</returns>
+    /// <returns>The <see cref="ChecksumResult"/>.</returns>
     public static ChecksumResult Evaluate(CheckerStatus status)
     {
         if (string.IsNullOrWhiteSpace(status.ActualChecksum))
