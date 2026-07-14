@@ -10,6 +10,11 @@ namespace CheckerRemoteBridge.Models;
 public sealed class CheckerStatus
 {
     /// <summary>
+    /// Gets or sets a value indicating whether <see cref="CheckerState"/> has been populated from OPC.
+    /// </summary>
+    public bool HasCheckerState { get; set; }
+
+    /// <summary>
     /// Gets or sets the numeric checker state code from OPC.
     /// </summary>
     public int CheckerState { get; set; }

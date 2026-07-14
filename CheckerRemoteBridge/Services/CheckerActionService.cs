@@ -7,6 +7,7 @@ namespace CheckerRemoteBridge.Services;
 using static CheckerRemoteBridge.Services.ChecksumVerificationService;
 
 using OpcUtilities;
+using CheckerRemoteBridge.Models;
 
 /// <summary>
 /// Service responsible for OPC request pulses of checker control actions and Pi-side checksum execution/client launch.
@@ -64,13 +65,32 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     {
         await this.RequestChecksumAsync(finalId, cancellationToken);
 
-        if (!Evaluate(this.stateStore.Get(finalId)).Equals(ChecksumResult.Match))
+        CheckerStatus status = this.stateStore.Get(finalId);
+
+        if (!Evaluate(status).Equals(ChecksumResult.Match))
         {
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} failed checksum");
+            return false;
+        }
+
+        // If the checker state has not arrived from OPC yet, do not treat the default value of 0 as an offline state.
+        if (!status.HasCheckerState)
+        {
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} launch skipped: checker state has not populated yet");
+            return false;
+        }
+
+        // If the Pi is doing something, don't launch (it's busy, almost certainly with this program). Nothing is lost, we still have the SSH connection.
+        if (status.CheckerState != 0)
+        {
+            this.stateStore.Update(finalId, status => status.CheckerRunning = true);
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} already running");
             return false;
         }
 
         bool isRunning = await this.piControlService.LaunchAsync(finalId, cancellationToken);
         this.stateStore.Update(finalId, status => status.CheckerRunning = isRunning);
+        System.Diagnostics.Debug.WriteLine($"Checker {finalId} running: {isRunning}");
 
         return isRunning;
     }

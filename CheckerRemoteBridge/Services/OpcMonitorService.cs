@@ -77,6 +77,7 @@ public sealed class OpcMonitorService(
         {
             case "CheckerState":
                 status.CheckerState = Convert.ToInt32(value);
+                status.HasCheckerState = true;
                 break;
             case "CheckerStatusMessage":
                 status.StatusMessage = value?.ToString() ?? string.Empty;

@@ -5,6 +5,8 @@
 namespace CheckerRemoteBridge.Services;
 
 using Renci.SshNet;
+using Renci.SshNet.Common;
+using System.Net.Sockets;
 
 /// <summary>
 /// <see cref="IPiControlService"/> implementation which connects to checker Pis over SSH or a local agent (launch, backup, reachability).
@@ -22,7 +24,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
     private static readonly string ChecksumCommandEnvOverride = "FINAL_CHECKSUM_COMMAND";
 
     /// <summary>
-    /// The checksum command to run if there is not one in the environment variable at <see cref="LaunchCommandEnvOverride"/>.
+    /// The launch command to run if there is not one in the environment variable at <see cref="LaunchCommandEnvOverride"/>.
     /// </summary>
     private static readonly string DefaultLaunchCommand = "./ready.sh";
 
@@ -68,7 +70,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
 
         this.checksumCommand = Environment.GetEnvironmentVariable(ChecksumCommandEnvOverride)?.Trim() ?? DefaultChecksumCommand;
         this.launchCommand = Environment.GetEnvironmentVariable(LaunchCommandEnvOverride)?.Trim() ?? DefaultLaunchCommand;
-        this.IsConfigured = this.connections.Count == 5;
+        this.IsConfigured = this.connections.Count > 0;
     }
 
     /// <inheritdoc/>
@@ -188,22 +190,30 @@ public sealed class PiControlService : IPiControlService, IDisposable
         return await Task.Run(
             () =>
             {
-                if (client.IsConnected)
+                try
                 {
-                    return true;
-                }
+                    if (client.IsConnected)
+                    {
+                        return true;
+                    }
 
-                client.Connect();
-                if (!client.IsConnected)
+                    client.Connect();
+                    if (!client.IsConnected)
+                    {
+                        return false;
+                    }
+
+                    SshCommand command = client.CreateCommand("bash -lc 'echo READY'");
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
+                    command.Execute();
+
+                    return command.ExitStatus == 0;
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
+                    Console.WriteLine($"SSH connect failed: {ex.Message}");
                     return false;
                 }
-
-                SshCommand command = client.CreateCommand("bash -lc 'echo READY'");
-                command.CommandTimeout = TimeSpan.FromSeconds(15);
-                command.Execute();
-
-                return command.ExitStatus == 0;
             }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -224,11 +234,19 @@ public sealed class PiControlService : IPiControlService, IDisposable
         return await Task.Run(
             () =>
             {
-                SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
-                command.CommandTimeout = TimeSpan.FromMinutes(5);
-                string cmdOut = command.Execute();
-                Console.WriteLine($"{commandText}: {cmdOut}");
-                return command.ExitStatus == 0 ? cmdOut.Trim() : null;
+                try
+                {
+                    SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
+                    command.CommandTimeout = TimeSpan.FromMinutes(5);
+                    string cmdOut = command.Execute();
+                    Console.WriteLine($"{commandText}: {cmdOut}");
+                    return command.ExitStatus == 0 ? cmdOut.Trim() : null;
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
+                {
+                    Console.WriteLine($"SSH command failed: {ex.Message}");
+                    return null;
+                }
             }, cancellationToken).ConfigureAwait(false);
     }
 
