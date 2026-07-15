@@ -5,7 +5,7 @@
 namespace CheckerRemoteBridge.Models;
 
 /// <summary>
-/// Enum to represent the "health" classification for a checker station (based on time from last response/state).
+/// Enum representing the "health" classification for a checker station (based on state/time of last response).
 /// </summary>
 public enum HealthState
 {

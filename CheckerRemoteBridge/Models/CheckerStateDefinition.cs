@@ -5,11 +5,8 @@
 namespace CheckerRemoteBridge.Models;
 
 /// <summary>
-/// Connects status code to meaning and color to be used.
+/// Model connecting numeric status code to semantic meaning and distinctive color.
 /// </summary>
-/// <remarks>
-/// Initializes a new instance of the <see cref="CheckerStateDefinition"/> class.
-/// </remarks>
 /// <param name="label">The human-readable label.</param>
 /// <param name="color">The CSS color used when rendering the state.</param>
 public sealed class CheckerStateDefinition(string label, string color)

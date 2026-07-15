@@ -5,7 +5,7 @@
 namespace CheckerRemoteBridge.Models;
 
 /// <summary>
-/// Live OPC-backed status for a single checker final station.
+/// Model representing the OPC-backed status of a single checker final station.
 /// </summary>
 public sealed class CheckerStatus
 {
@@ -55,7 +55,7 @@ public sealed class CheckerStatus
     public bool RebootRequestAck { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the client checker program is currently running.
+    /// Gets or sets a value indicating whether the client checker program is currently running (not OPC-relevant).
     /// </summary>
     public bool CheckerRunning { get; set; }
 }
