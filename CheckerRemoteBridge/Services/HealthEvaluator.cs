@@ -32,7 +32,7 @@ public static class HealthEvaluator
 
         bool watchdogStale = status.WatchdogDateTime is null
             || (now - status.WatchdogDateTime.Value).TotalSeconds > watchdogStaleSeconds;
-        bool hasAlarm = !string.IsNullOrWhiteSpace(status.AlarmMessage);
+        bool hasAlarm = (status.CheckerState == 1) || !string.IsNullOrWhiteSpace(status.AlarmMessage);
         return watchdogStale || hasAlarm ? HealthState.Red : HealthState.Green;
     }
 

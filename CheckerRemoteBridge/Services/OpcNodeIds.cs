@@ -27,7 +27,6 @@ public static class OpcNodeIds
         "RebootRequestACK",
         "WatchdogDateTime",
         "ExpectedChecksum",
-        "ActualChecksum",
     ];
 
     /// <summary>
