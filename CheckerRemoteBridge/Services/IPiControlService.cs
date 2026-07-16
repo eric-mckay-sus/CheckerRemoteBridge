@@ -44,4 +44,9 @@ public interface IPiControlService
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns>The checksum output when the script succeeds; otherwise <see langword="null"/>.</returns>
     Task<string?> RunChecksumScriptAsync(int finalId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Disconnects from all SSH clients.
+    /// </summary>
+    void DisconnectAll();
 }

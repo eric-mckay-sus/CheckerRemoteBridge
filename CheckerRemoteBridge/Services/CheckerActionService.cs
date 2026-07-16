@@ -34,6 +34,15 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     public bool SshConfigured => this.piControlService.IsConfigured;
 
     /// <summary>
+    /// Executes cleanup procedures for <see cref="opcClient"/> and <see cref="piControlService"/>.
+    /// </summary>
+    public void EndServices()
+    {
+        this.opcClient.UnsubscribeAll();
+        this.piControlService.DisconnectAll();
+    }
+
+    /// <summary>
     /// Fires a reboot request for the checker with ID=<paramref name="finalId"/>.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>

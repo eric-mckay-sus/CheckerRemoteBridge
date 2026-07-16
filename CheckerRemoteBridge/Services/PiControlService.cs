@@ -34,6 +34,16 @@ public sealed class PiControlService : IPiControlService, IDisposable
     private static readonly string LaunchCommandEnvOverride = "FINAL_LAUNCH_COMMAND";
 
     /// <summary>
+    /// The log file folder to use if there is not one in the environment variable at <see cref="LogFolderEnvOverride"/>.
+    /// </summary>
+    private static readonly string DefaultLogFolder = "~/venv/checker/Results";
+
+    /// <summary>
+    /// The name of the environment variable containing the optional override for <see cref="DefaultLogFolder"/>.
+    /// </summary>
+    private static readonly string LogFolderEnvOverride = "FINAL_LOG_FOLDER";
+
+    /// <summary>
     /// The dictionary mapping final station IDs to their <see cref="PiConnection"/> object containing connection credentials.
     /// </summary>
     private readonly IReadOnlyDictionary<int, PiConnection> connections;
@@ -59,6 +69,11 @@ public sealed class PiControlService : IPiControlService, IDisposable
     private readonly string launchCommand;
 
     /// <summary>
+    /// The log folder to be used (assigned in ctor as <see cref="LogFolderEnvOverride"/> if it exists, otherwise <see cref="DefaultLogFolder"/>).
+    /// </summary>
+    private readonly string logFolder;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PiControlService"/> class by initializing connection with all checker Pis.
     /// </summary>
     public PiControlService()
@@ -70,6 +85,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
 
         this.checksumCommand = Environment.GetEnvironmentVariable(ChecksumCommandEnvOverride)?.Trim() ?? DefaultChecksumCommand;
         this.launchCommand = Environment.GetEnvironmentVariable(LaunchCommandEnvOverride)?.Trim() ?? DefaultLaunchCommand;
+        this.logFolder = Environment.GetEnvironmentVariable(LogFolderEnvOverride)?.Trim() ?? DefaultLogFolder;
         this.IsConfigured = this.connections.Count > 0;
     }
 
@@ -90,7 +106,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// Ensures SSH access to all configured Pis before the app starts.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when all Pis are accessible.</returns>
+    /// <returns>A value indicating whether all Pis are accessible.</returns>
     public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (!this.IsConfigured)
@@ -106,17 +122,36 @@ public sealed class PiControlService : IPiControlService, IDisposable
         return this.IsReady;
     }
 
+    /// <summary>
+    /// Runs the configured checksum script on the specified Pi and returns the script output.
+    /// </summary>
+    /// <param name="finalId">The final station number (1-based).</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The checksum output when the script succeeds; otherwise <see langword="null"/>.</returns>
+    public async Task<string?> RunChecksumScriptAsync(int finalId, CancellationToken cancellationToken = default)
+    {
+        if (!await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        SshClient client = this.GetClient(finalId);
+        return await this.RunAndCaptureChecksumAsync(client, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc/>
     public async Task<bool> LaunchAsync(int finalId, CancellationToken cancellationToken = default)
     {
         if (!await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false))
         {
+            System.Diagnostics.Debug.WriteLine($"Final {finalId} not reachable");
             return false;
         }
 
         SshClient client = this.GetClient(finalId);
-        string? output = await RunCommandAndCaptureAsync(client, this.launchCommand, cancellationToken).ConfigureAwait(false);
-        return !string.IsNullOrWhiteSpace(output);
+        bool fired = await this.FireLaunchCommandAsync(client, cancellationToken).ConfigureAwait(false);
+        Console.WriteLine($"Final {finalId} launched checker: {fired}");
+        return fired; // simply verifies command did not fail, might want better validation in case script name changes
     }
 
     /// <inheritdoc/>
@@ -137,20 +172,15 @@ public sealed class PiControlService : IPiControlService, IDisposable
     }
 
     /// <summary>
-    /// Runs the configured checksum script on the specified Pi and returns the script output.
+    /// <inheritdoc/>
     /// </summary>
-    /// <param name="finalId">The final station number (1-based).</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>The checksum output when the script succeeds; otherwise <see langword="null"/>.</returns>
-    public async Task<string?> RunChecksumScriptAsync(int finalId, CancellationToken cancellationToken = default)
+    public void DisconnectAll()
     {
-        if (!await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false))
+        foreach (KeyValuePair<int, SshClient> clientPair in this.sshClients)
         {
-            return null;
+            clientPair.Value.Disconnect();
+            Console.WriteLine($"Disconnected from final {clientPair.Key}");
         }
-
-        SshClient client = this.GetClient(finalId);
-        return await RunCommandAndCaptureAsync(client, this.checksumCommand, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -211,41 +241,8 @@ public sealed class PiControlService : IPiControlService, IDisposable
                 }
                 catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
-                    Console.WriteLine($"SSH connect failed: {ex.Message}");
+                    Console.Error.WriteLine($"SSH connect failed: {ex.Message}");
                     return false;
-                }
-            }, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Executes a command on the specified SSH client and captures its output.
-    /// </summary>
-    /// <param name="client">The SshClient on which to run the command.</param>
-    /// <param name="commandText">The command to be run.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to invalidate the command.</param>
-    /// <returns>A Task representing the command output when it succeeds; otherwise <see langword="null"/>.</returns>
-    private static async Task<string?> RunCommandAndCaptureAsync(SshClient client, string commandText, CancellationToken cancellationToken)
-    {
-        if (!client.IsConnected && !await ConnectClientAsync(client, cancellationToken).ConfigureAwait(false))
-        {
-            return null;
-        }
-
-        return await Task.Run(
-            () =>
-            {
-                try
-                {
-                    SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
-                    command.CommandTimeout = TimeSpan.FromSeconds(15);
-                    string cmdOut = command.Execute();
-                    Console.WriteLine($"{commandText}: {cmdOut}");
-                    return command.ExitStatus == 0 ? cmdOut.Trim() : null;
-                }
-                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
-                {
-                    Console.WriteLine($"SSH command failed: {ex.Message}");
-                    return null;
                 }
             }, cancellationToken).ConfigureAwait(false);
     }
@@ -334,5 +331,71 @@ public sealed class PiControlService : IPiControlService, IDisposable
             this.sshClients[finalId] = newClient;
             return newClient;
         }
+    }
+
+    private async Task<bool> FireLaunchCommandAsync(SshClient client, CancellationToken cancellationToken)
+    {
+        if (!client.IsConnected && !await ConnectClientAsync(client, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        return await Task.Factory.StartNew(
+            () =>
+            {
+                try
+                {
+                    // nohup + redirect + disown fully detaches the child from this SSH session,
+                    // so the channel closes as soon as the *launcher* line finishes, not the checker itself.
+                    string detached =
+                        $"nohup bash -lc '{this.launchCommand.Replace("'", "'\\''")}' " +
+                        $"> {Path.Combine(this.logFolder, DateTime.Now.ToString("yyyyMMdd"))} 2>&1 < /dev/null & disown; echo LAUNCHED";
+
+                    SshCommand command = client.CreateCommand(detached);
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
+                    string cmdOut = command.Execute();
+                    return command.ExitStatus == 0 && cmdOut.Contains("LAUNCHED");
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
+                {
+                    Console.Error.WriteLine($"SSH checker launch failed: {ex.Message}");
+                    return false;
+                }
+            },
+            cancellationToken,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Executes a command on the specified SSH client and captures its output.
+    /// </summary>
+    /// <param name="client">The SshClient on which to run the command.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to invalidate the command.</param>
+    /// <returns>A Task representing the command output when it succeeds; otherwise <see langword="null"/>.</returns>
+    private async Task<string?> RunAndCaptureChecksumAsync(SshClient client, CancellationToken cancellationToken)
+    {
+        if (!client.IsConnected && !await ConnectClientAsync(client, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await Task.Run(
+            () =>
+            {
+                try
+                {
+                    SshCommand command = client.CreateCommand(BuildBashCommand(this.checksumCommand));
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
+                    string cmdOut = command.Execute();
+                    Console.WriteLine($"Checksum result: {cmdOut}");
+                    return command.ExitStatus == 0 ? cmdOut.Trim() : null;
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
+                {
+                    Console.Error.WriteLine($"Checksum command failed: {ex.Message}");
+                    return null;
+                }
+            }, cancellationToken).ConfigureAwait(false);
     }
 }
