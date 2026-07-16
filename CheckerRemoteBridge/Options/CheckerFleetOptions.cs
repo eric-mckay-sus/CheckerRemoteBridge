@@ -5,7 +5,7 @@
 namespace CheckerRemoteBridge.Options;
 
 /// <summary>
-/// Fleet-wide configuration for checker monitoring and actions.
+/// Fleet-wide default configuration for checker monitoring and actions (overridden by appsettings.json).
 /// </summary>
 public sealed class CheckerFleetOptions
 {

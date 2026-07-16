@@ -46,14 +46,14 @@
                 <span class="fleet-kv-key">Checker state</span>
                 <span style="color:@StateColor">@Status.CheckerState — @StateLabel</span>
             </div>
-            @if(string.IsNullOrEmpty(Status.AlarmMessage))
+            @if(!string.IsNullOrEmpty(Status.StatusMessage))
             {
                 <div class="fleet-kv-row">
                     <span class="fleet-kv-key">Status message</span>
                     <span>@Status.StatusMessage</span>
                 </div>
             }
-            @if(string.IsNullOrEmpty(Status.AlarmMessage))
+            @if(!string.IsNullOrEmpty(Status.AlarmMessage))
             {
                 <div class="fleet-kv-row">
                     <span class="fleet-kv-key">Alarm message</span>

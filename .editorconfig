@@ -163,6 +163,9 @@ dotnet_diagnostic.SA1009.severity = none
 # SA1010: Opening square brackets should be preceded by a space - not when an indexer
 dotnet_diagnostic.SA1010.severity = none
 
+# SA1313: Method parameter names should begin with lowercase letter - not for discard operator _
+dotnet_diagnostic.SA1313.severity = silent
+
 # SA1314: Type parameter names should begin with T - not if there's a better name
 dotnet_diagnostic.SA1314.severity = none
 
@@ -171,6 +174,9 @@ dotnet_diagnostic.SA1210.severity = none
 
 # CA1806: Do not ignore method results - Don't want to miss these
 dotnet_diagnostic.CA1806.severity = warning
+
+# CA1852: Flag unsealed classes that are not inherited from
+dotnet_diagnostic.CA1852.severity = warning
 
 # Space preferences
 csharp_space_after_cast = false

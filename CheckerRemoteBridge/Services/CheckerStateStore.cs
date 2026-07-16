@@ -8,19 +8,19 @@ using System.Collections.Concurrent;
 using CheckerRemoteBridge.Models;
 
 /// <summary>
-/// In-memory store of live checker status, updated by OPC subscriptions.
+/// Service responsible for maintaining the in-memory store of live checker status, updated by OPC subscriptions.
 /// </summary>
 public sealed class CheckerStateStore
 {
     private readonly ConcurrentDictionary<int, CheckerStatus> states = new ();
 
     /// <summary>
-    /// Raised when a station's status changes.
+    /// Event raised (with final station ID) when a checker's status changes.
     /// </summary>
     public event Action<int>? StatusChanged;
 
     /// <summary>
-    /// Gets the current status for a final station, creating a default entry if needed.
+    /// Gets the current <see cref="CheckerStatus"/> object for a final station, creating a default entry if needed.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
     /// <returns>The current status snapshot.</returns>

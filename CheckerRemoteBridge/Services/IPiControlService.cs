@@ -5,7 +5,7 @@
 namespace CheckerRemoteBridge.Services;
 
 /// <summary>
-/// Controls checker Pis over SSH or a local agent (launch, backup, reachability).
+/// Interface defining the contract for controlling checker Pis over SSH or a local agent (launch, backup, reachability).
 /// </summary>
 public interface IPiControlService
 {

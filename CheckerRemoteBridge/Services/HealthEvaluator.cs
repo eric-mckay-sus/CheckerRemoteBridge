@@ -7,7 +7,7 @@ namespace CheckerRemoteBridge.Services;
 using CheckerRemoteBridge.Models;
 
 /// <summary>
-/// Derives checker health from live status and the current clock.
+/// Service responsible for deriving checker health from live status and the current clock.
 /// </summary>
 public static class HealthEvaluator
 {

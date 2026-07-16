@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 using OpcUtilities;
 
 /// <summary>
-/// Background service that subscribes to checker status OPC tags and updates the shared store.
+/// Service responsible for subscribing to and monitoring checker status OPC tags, updating the local store.
 /// </summary>
 /// <param name="opcClient">The OPC client used for subscriptions.</param>
 /// <param name="stateStore">The shared checker state store.</param>
@@ -65,12 +65,19 @@ public sealed class OpcMonitorService(
         return Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
+    /// <summary>
+    /// Updates the <paramref name="tagName"/> entry in the <paramref name="status"/> object to <paramref name="value"/>.
+    /// </summary>
+    /// <param name="status">The <see cref="CheckerStatus"/> object to update.</param>
+    /// <param name="tagName">The property of the <paramref name="status"/> object to update.</param>
+    /// <param name="value">The new value for <paramref name="status"/>.<paramref name="tagName"/>.</param>
     private static void ApplyTagValue(CheckerStatus status, string tagName, object? value)
     {
         switch (tagName)
         {
             case "CheckerState":
                 status.CheckerState = Convert.ToInt32(value);
+                status.HasCheckerState = true;
                 break;
             case "CheckerStatusMessage":
                 status.StatusMessage = value?.ToString() ?? string.Empty;
@@ -96,6 +103,11 @@ public sealed class OpcMonitorService(
         }
     }
 
+    /// <summary>
+    /// Attempts to convert the <paramref name="value"/> object to a datetime.
+    /// </summary>
+    /// <param name="value">The onject to convert to a datetime.</param>
+    /// <returns>A new <see cref="DateTime"/> representing <paramref name="value"/>, or null if conversion failed.</returns>
     private static DateTime? ConvertToDateTime(object? value)
     {
         if (value is null)
@@ -118,6 +130,11 @@ public sealed class OpcMonitorService(
             : null;
     }
 
+    /// <summary>
+    /// Updates the local state store with the new <paramref name="value"/> of <paramref name="nodeId"/>.
+    /// </summary>
+    /// <param name="nodeId">The OPC tag that was changed.</param>
+    /// <param name="value">The new value stored in <paramref name="nodeId"/>.</param>
     private void HandleTagChange(string nodeId, object? value)
     {
         if (!OpcNodeIds.TryParseStatusTag(nodeId, out int finalId, out string tagName))

@@ -5,11 +5,14 @@
 namespace CheckerRemoteBridge.Services;
 
 /// <summary>
-/// A service that pretends to use SSH to access the target checker Pis. Designed for developing SSH functionality.
+/// <see cref="IPiControlService"/> implementation that pretends to use SSH to access the target checker Pis. Designed for developing SSH flow off the network.
 /// </summary>
 public class FakePiControlService : IPiControlService
 {
-    private static readonly string DefaultChecksumCommand = "cksum ./ready.sh";
+    /// <summary>
+    /// The output from running the checksum.
+    /// </summary>
+    private static readonly string ChecksumOutput = "103485781052109";
 
     /// <inheritdoc />
     public bool IsConfigured { get; } = true;
@@ -31,6 +34,6 @@ public class FakePiControlService : IPiControlService
     public async Task<string?> RunChecksumScriptAsync(int finalId, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Final {finalId} ran checksum.");
-        return DefaultChecksumCommand;
+        return ChecksumOutput;
     }
 }

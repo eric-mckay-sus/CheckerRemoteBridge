@@ -5,17 +5,58 @@
 namespace CheckerRemoteBridge.Services;
 
 using Renci.SshNet;
+using Renci.SshNet.Common;
+using System.Net.Sockets;
 
 /// <summary>
-/// Controls checker Pis over SSH or a local agent (launch, backup, reachability).
+/// <see cref="IPiControlService"/> implementation which connects to checker Pis over SSH or a local agent (launch, backup, reachability).
 /// </summary>
 public sealed class PiControlService : IPiControlService, IDisposable
 {
+    /// <summary>
+    /// The checksum command to run if there is not one in the environment variable at <see cref="ChecksumCommandEnvOverride"/>.
+    /// </summary>
     private static readonly string DefaultChecksumCommand = "cksum ./ready.sh";
+
+    /// <summary>
+    /// The name of the environment variable containing the optional override for <see cref="DefaultChecksumCommand"/>.
+    /// </summary>
+    private static readonly string ChecksumCommandEnvOverride = "FINAL_CHECKSUM_COMMAND";
+
+    /// <summary>
+    /// The launch command to run if there is not one in the environment variable at <see cref="LaunchCommandEnvOverride"/>.
+    /// </summary>
+    private static readonly string DefaultLaunchCommand = "./ready.sh";
+
+    /// <summary>
+    /// The name of the environment variable containing the optional override for <see cref="DefaultLaunchCommand"/>.
+    /// </summary>
+    private static readonly string LaunchCommandEnvOverride = "FINAL_LAUNCH_COMMAND";
+
+    /// <summary>
+    /// The dictionary mapping final station IDs to their <see cref="PiConnection"/> object containing connection credentials.
+    /// </summary>
     private readonly IReadOnlyDictionary<int, PiConnection> connections;
+
+    /// <summary>
+    /// The dictionary mapping final station IDs to their <see cref="SshClient"/> object capable of executing SSH commands.
+    /// </summary>
     private readonly Dictionary<int, SshClient> sshClients = [];
+
+    /// <summary>
+    /// The lock object used to prevent concurrency-related issues when getting or disposing a client.
+    /// </summary>
     private readonly object clientSync = new ();
+
+    /// <summary>
+    /// The checksum command to be used (assigned in ctor as <see cref="ChecksumCommandEnvOverride"/> if it exists, otherwise <see cref="DefaultChecksumCommand"/>).
+    /// </summary>
     private readonly string checksumCommand;
+
+    /// <summary>
+    /// The checksum command to be used (assigned in ctor as <see cref="LaunchCommandEnvOverride"/> if it exists, otherwise <see cref="DefaultLaunchCommand"/>).
+    /// </summary>
+    private readonly string launchCommand;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PiControlService"/> class by initializing connection with all checker Pis.
@@ -27,8 +68,9 @@ public sealed class PiControlService : IPiControlService, IDisposable
             .OfType<PiConnection>()
             .ToDictionary(connection => connection.finalId);
 
-        this.checksumCommand = Environment.GetEnvironmentVariable("FINAL_CHECKSUM_COMMAND")?.Trim() ?? DefaultChecksumCommand;
-        this.IsConfigured = this.connections.Count == 5;
+        this.checksumCommand = Environment.GetEnvironmentVariable(ChecksumCommandEnvOverride)?.Trim() ?? DefaultChecksumCommand;
+        this.launchCommand = Environment.GetEnvironmentVariable(LaunchCommandEnvOverride)?.Trim() ?? DefaultLaunchCommand;
+        this.IsConfigured = this.connections.Count > 0;
     }
 
     /// <inheritdoc/>
@@ -73,7 +115,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
         }
 
         SshClient client = this.GetClient(finalId);
-        string? output = await RunCommandAndCaptureAsync(client, this.checksumCommand, cancellationToken).ConfigureAwait(false);
+        string? output = await RunCommandAndCaptureAsync(client, this.launchCommand, cancellationToken).ConfigureAwait(false);
         return !string.IsNullOrWhiteSpace(output);
     }
 
@@ -148,22 +190,30 @@ public sealed class PiControlService : IPiControlService, IDisposable
         return await Task.Run(
             () =>
             {
-                if (client.IsConnected)
+                try
                 {
-                    return true;
-                }
+                    if (client.IsConnected)
+                    {
+                        return true;
+                    }
 
-                client.Connect();
-                if (!client.IsConnected)
+                    client.Connect();
+                    if (!client.IsConnected)
+                    {
+                        return false;
+                    }
+
+                    SshCommand command = client.CreateCommand("bash -lc 'echo READY'");
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
+                    command.Execute();
+
+                    return command.ExitStatus == 0;
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
+                    Console.WriteLine($"SSH connect failed: {ex.Message}");
                     return false;
                 }
-
-                SshCommand command = client.CreateCommand("bash -lc 'echo READY'");
-                command.CommandTimeout = TimeSpan.FromSeconds(15);
-                command.Execute();
-
-                return command.ExitStatus == 0;
             }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -184,11 +234,19 @@ public sealed class PiControlService : IPiControlService, IDisposable
         return await Task.Run(
             () =>
             {
-                SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
-                command.CommandTimeout = TimeSpan.FromMinutes(5);
-                string cmdOut = command.Execute();
-                Console.WriteLine($"{commandText}: {cmdOut}");
-                return command.ExitStatus == 0 ? cmdOut.Trim() : null;
+                try
+                {
+                    SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
+                    string cmdOut = command.Execute();
+                    Console.WriteLine($"{commandText}: {cmdOut}");
+                    return command.ExitStatus == 0 ? cmdOut.Trim() : null;
+                }
+                catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
+                {
+                    Console.WriteLine($"SSH command failed: {ex.Message}");
+                    return null;
+                }
             }, cancellationToken).ConfigureAwait(false);
     }
 
