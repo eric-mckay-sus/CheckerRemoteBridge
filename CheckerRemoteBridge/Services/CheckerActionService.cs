@@ -78,14 +78,14 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
 
         if (!Evaluate(status).Equals(ChecksumResult.Match))
         {
-            Console.WriteLine($"Checker {finalId} failed checksum");
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} failed checksum");
             return false;
         }
 
         // If the checker state has not arrived from OPC yet, do not treat the default value of 0 as an offline state.
         if (!status.HasCheckerState)
         {
-            Console.WriteLine($"Checker {finalId} launch skipped: checker state has not populated yet");
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} launch skipped: checker state has not populated yet");
             return false;
         }
 
@@ -93,13 +93,13 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
         if (status.CheckerState != 0)
         {
             this.stateStore.Update(finalId, status => status.CheckerRunning = true);
-            Console.WriteLine($"Checker {finalId} already running");
+            System.Diagnostics.Debug.WriteLine($"Checker {finalId} already running");
             return false;
         }
 
         bool isRunning = await this.piControlService.LaunchAsync(finalId, cancellationToken);
         this.stateStore.Update(finalId, status => status.CheckerRunning = isRunning);
-        Console.WriteLine($"Checker {finalId} running: {isRunning}");
+        System.Diagnostics.Debug.WriteLine($"Checker {finalId} running: {isRunning}");
 
         return isRunning;
     }

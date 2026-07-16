@@ -144,13 +144,13 @@ public sealed class PiControlService : IPiControlService, IDisposable
     {
         if (!await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false))
         {
-            Console.WriteLine($"Final {finalId} not reachable");
+            System.Diagnostics.Debug.WriteLine($"Final {finalId} not reachable");
             return false;
         }
 
         SshClient client = this.GetClient(finalId);
         bool fired = await this.FireLaunchCommandAsync(client, cancellationToken).ConfigureAwait(false);
-        Console.WriteLine($"Final {finalId} launched checker {fired}");
+        Console.WriteLine($"Final {finalId} launched checker: {fired}");
         return fired; // simply verifies command did not fail, might want better validation in case script name changes
     }
 
@@ -217,9 +217,6 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// <returns>A Task representing whether the connection was successful.</returns>
     private static async Task<bool> ConnectClientAsync(SshClient client, CancellationToken cancellationToken)
     {
-        ThreadPool.GetAvailableThreads(out int worker, out int _);
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Starting connect for thread pool avail={worker}");
-
         return await Task.Run(
             () =>
             {
@@ -244,7 +241,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
                 }
                 catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
-                    Console.WriteLine($"SSH connect failed: {ex.Message}");
+                    Console.Error.WriteLine($"SSH connect failed: {ex.Message}");
                     return false;
                 }
             }, cancellationToken).ConfigureAwait(false);
@@ -361,7 +358,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
                 }
                 catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
-                    Console.WriteLine($"SSH launch fire failed: {ex.Message}");
+                    Console.Error.WriteLine($"SSH checker launch failed: {ex.Message}");
                     return false;
                 }
             },
@@ -396,7 +393,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
                 }
                 catch (Exception ex) when (ex is SshException or SocketException or TimeoutException)
                 {
-                    Console.WriteLine($"SSH command failed: {ex.Message}");
+                    Console.Error.WriteLine($"Checksum command failed: {ex.Message}");
                     return null;
                 }
             }, cancellationToken).ConfigureAwait(false);
