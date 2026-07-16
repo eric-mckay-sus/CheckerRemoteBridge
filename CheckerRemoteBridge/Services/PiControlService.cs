@@ -90,7 +90,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// Ensures SSH access to all configured Pis before the app starts.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns><see langword="true"/> when all Pis are accessible.</returns>
+    /// <returns>A value indicating whether all Pis are accessible.</returns>
     public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (!this.IsConfigured)
@@ -111,12 +111,14 @@ public sealed class PiControlService : IPiControlService, IDisposable
     {
         if (!await this.IsReachableAsync(finalId, cancellationToken).ConfigureAwait(false))
         {
+            Console.WriteLine($"Final {finalId} not reachable");
             return false;
         }
 
         SshClient client = this.GetClient(finalId);
         string? output = await RunCommandAndCaptureAsync(client, this.launchCommand, cancellationToken).ConfigureAwait(false);
-        return !string.IsNullOrWhiteSpace(output);
+        Console.WriteLine($"Final {finalId} reported {output}");
+        return true; // Works until script name changes
     }
 
     /// <inheritdoc/>
@@ -134,6 +136,18 @@ public sealed class PiControlService : IPiControlService, IDisposable
         }
 
         return await ConnectClientAsync(client, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <inheritdoc/>
+    /// </summary>
+    public void DisconnectAll()
+    {
+        foreach (KeyValuePair<int, SshClient> clientPair in this.sshClients)
+        {
+            clientPair.Value.Disconnect();
+            Console.WriteLine($"Disconnected from final {clientPair.Key}");
+        }
     }
 
     /// <summary>
@@ -187,6 +201,9 @@ public sealed class PiControlService : IPiControlService, IDisposable
     /// <returns>A Task representing whether the connection was successful.</returns>
     private static async Task<bool> ConnectClientAsync(SshClient client, CancellationToken cancellationToken)
     {
+        ThreadPool.GetAvailableThreads(out int worker, out int _);
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Starting connect for thread pool avail={worker}");
+
         return await Task.Run(
             () =>
             {

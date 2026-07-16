@@ -12,7 +12,7 @@ public class FakePiControlService : IPiControlService
     /// <summary>
     /// The output from running the checksum.
     /// </summary>
-    private static readonly string ChecksumOutput = "103485781052109";
+    private static readonly string ChecksumOutput = "2878998814 159 ./ready.sh";
 
     /// <inheritdoc />
     public bool IsConfigured { get; } = true;
@@ -35,5 +35,13 @@ public class FakePiControlService : IPiControlService
     {
         Console.WriteLine($"Final {finalId} ran checksum.");
         return ChecksumOutput;
+    }
+
+    /// <summary>
+    /// <inheritdoc/>
+    /// </summary>
+    public void DisconnectAll()
+    {
+        Console.WriteLine("Disconnected from all SSH clients.");
     }
 }

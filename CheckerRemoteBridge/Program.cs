@@ -29,7 +29,7 @@ public static class Program
 
         builder.Services.AddSingleton<CheckerStateStore>();
         builder.Services.AddSingleton<CheckerActionService>();
-        builder.Services.AddSingleton<IPiControlService, FakePiControlService>(); // TODO swap FakePiControlService with PiControlService for deploy
+        builder.Services.AddSingleton<IPiControlService, PiControlService>();
         builder.Services.AddSingleton(CreateOpcClient);
         builder.Services.AddHostedService<OpcMonitorService>();
 

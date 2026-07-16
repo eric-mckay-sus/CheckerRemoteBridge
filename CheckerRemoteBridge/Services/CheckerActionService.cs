@@ -34,6 +34,15 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
     public bool SshConfigured => this.piControlService.IsConfigured;
 
     /// <summary>
+    /// Executes cleanup procedures for <see cref="opcClient"/> and <see cref="piControlService"/>.
+    /// </summary>
+    public void EndServices()
+    {
+        this.opcClient.UnsubscribeAll();
+        this.piControlService.DisconnectAll();
+    }
+
+    /// <summary>
     /// Fires a reboot request for the checker with ID=<paramref name="finalId"/>.
     /// </summary>
     /// <param name="finalId">The final station number (1-based).</param>
@@ -69,14 +78,14 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
 
         if (!Evaluate(status).Equals(ChecksumResult.Match))
         {
-            System.Diagnostics.Debug.WriteLine($"Checker {finalId} failed checksum");
+            Console.WriteLine($"Checker {finalId} failed checksum");
             return false;
         }
 
         // If the checker state has not arrived from OPC yet, do not treat the default value of 0 as an offline state.
         if (!status.HasCheckerState)
         {
-            System.Diagnostics.Debug.WriteLine($"Checker {finalId} launch skipped: checker state has not populated yet");
+            Console.WriteLine($"Checker {finalId} launch skipped: checker state has not populated yet");
             return false;
         }
 
@@ -84,13 +93,13 @@ public sealed class CheckerActionService(IOpcClient opcClient, IPiControlService
         if (status.CheckerState != 0)
         {
             this.stateStore.Update(finalId, status => status.CheckerRunning = true);
-            System.Diagnostics.Debug.WriteLine($"Checker {finalId} already running");
+            Console.WriteLine($"Checker {finalId} already running");
             return false;
         }
 
         bool isRunning = await this.piControlService.LaunchAsync(finalId, cancellationToken);
         this.stateStore.Update(finalId, status => status.CheckerRunning = isRunning);
-        System.Diagnostics.Debug.WriteLine($"Checker {finalId} running: {isRunning}");
+        Console.WriteLine($"Checker {finalId} running: {isRunning}");
 
         return isRunning;
     }
