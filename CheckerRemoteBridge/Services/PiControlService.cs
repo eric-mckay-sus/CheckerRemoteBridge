@@ -237,7 +237,7 @@ public sealed class PiControlService : IPiControlService, IDisposable
                 try
                 {
                     SshCommand command = client.CreateCommand(BuildBashCommand(commandText));
-                    command.CommandTimeout = TimeSpan.FromMinutes(5);
+                    command.CommandTimeout = TimeSpan.FromSeconds(15);
                     string cmdOut = command.Execute();
                     Console.WriteLine($"{commandText}: {cmdOut}");
                     return command.ExitStatus == 0 ? cmdOut.Trim() : null;
