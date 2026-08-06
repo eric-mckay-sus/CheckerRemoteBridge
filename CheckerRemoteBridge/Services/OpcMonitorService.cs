@@ -40,8 +40,8 @@ public sealed class OpcMonitorService(
     {
         if (!this.opcClient.IsConfigured)
         {
-            this.logger.LogWarning(
-                "OPC connection is not configured. Set OPC_URI, OPC_USER, and OPC_PASS to enable live monitoring.");
+            Console.Error.WriteLine(
+                "OPC connection is not configured. Run +loadOpcEnv.bat to enable live monitoring.");
             return Task.CompletedTask;
         }
 

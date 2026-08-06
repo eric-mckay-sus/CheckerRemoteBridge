@@ -43,7 +43,11 @@ public static class Program
         // If the user has the environment variables for Pi connection, but connection failed, tell them.
         if (piControlService.IsConfigured && !await piControlService.InitializeAsync().ConfigureAwait(false))
         {
-            throw new InvalidOperationException("SSH access denied to one or more devices. Please verify connection information, or clear SSH environment variables to run OPC only.");
+            await Console.Error.WriteLineAsync("SSH access denied to one or more devices. Please verify connection information, or clear SSH environment variables to run OPC only.");
+        }
+        else if (!piControlService.IsConfigured)
+        {
+            await Console.Error.WriteLineAsync("SSH is not configured. Please run +loadPiEnv.bat to enable checksums and remote launch capability.");
         }
 
         if (!app.Environment.IsDevelopment())
